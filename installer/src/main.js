@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -99,5 +100,38 @@ ipcMain.handle('install', async (_event, apiKey) => {
   }
 })
 
-app.whenReady().then(createWindow)
+autoUpdater.on('update-available', () => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: '업데이트 알림',
+    message: '새 버전의 yeorot MCP 설치 프로그램이 있습니다.',
+    detail: '지금 다운로드하시겠습니까?',
+    buttons: ['다운로드', '나중에'],
+    defaultId: 0,
+  }).then(({ response }) => {
+    if (response === 0) autoUpdater.downloadUpdate()
+  })
+})
+
+autoUpdater.on('update-downloaded', () => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: '업데이트 준비 완료',
+    message: '다운로드가 완료되었습니다.',
+    detail: '지금 재시작하면 업데이트가 적용됩니다.',
+    buttons: ['지금 재시작', '나중에'],
+    defaultId: 0,
+  }).then(({ response }) => {
+    if (response === 0) autoUpdater.quitAndInstall()
+  })
+})
+
+app.whenReady().then(() => {
+  createWindow()
+  // 패키징된 앱에서만 업데이트 체크 (개발 중엔 스킵)
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdates().catch(() => {})
+  }
+})
+
 app.on('window-all-closed', () => app.quit())
