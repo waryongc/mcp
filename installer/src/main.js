@@ -1,43 +1,8 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
 const { execSync } = require('child_process')
-
-// electron-updater는 코드 서명이 없는 경우 크래시 가능 — 안전하게 로드
-let autoUpdater = null
-try {
-  autoUpdater = require('electron-updater').autoUpdater
-  autoUpdater.autoDownload = false
-
-  autoUpdater.on('update-available', () => {
-    dialog.showMessageBox({
-      type: 'info',
-      title: '업데이트 알림',
-      message: '새 버전의 yeorot MCP 설치 프로그램이 있습니다.',
-      detail: '지금 다운로드하시겠습니까?',
-      buttons: ['다운로드', '나중에'],
-      defaultId: 0,
-    }).then(({ response }) => {
-      if (response === 0) autoUpdater.downloadUpdate().catch(() => {})
-    })
-  })
-
-  autoUpdater.on('update-downloaded', () => {
-    dialog.showMessageBox({
-      type: 'info',
-      title: '업데이트 준비 완료',
-      message: '다운로드가 완료되었습니다.',
-      detail: '지금 재시작하면 업데이트가 적용됩니다.',
-      buttons: ['지금 재시작', '나중에'],
-      defaultId: 0,
-    }).then(({ response }) => {
-      if (response === 0) autoUpdater.quitAndInstall()
-    })
-  })
-} catch {
-  // electron-updater 로드 실패 시 업데이트 기능만 비활성화, 앱은 정상 동작
-}
 
 function getClaudeConfigPath() {
   if (process.platform === 'darwin') {
@@ -134,9 +99,6 @@ ipcMain.handle('install', async (_event, apiKey) => {
 
 app.whenReady().then(() => {
   createWindow()
-  if (app.isPackaged && autoUpdater) {
-    autoUpdater.checkForUpdates().catch(() => {})
-  }
 })
 
 app.on('window-all-closed', () => app.quit())
