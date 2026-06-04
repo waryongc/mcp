@@ -5,6 +5,7 @@ import { getTodayTasksTool } from './tools/getTodayTasks.js';
 import { updateTaskStatusTool } from './tools/updateTaskStatus.js';
 import { getRackStatusTool } from './tools/getRackStatus.js';
 import { createTaskTool } from './tools/createTask.js';
+import { getProjectStatusTool } from './tools/getProjectStatus.js';
 
 // Config validation runs on import — exits with error on missing env vars
 await import('./config.js');
@@ -20,10 +21,11 @@ server.tool(
   getTodayTasksTool.description,
   {
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('조회할 날짜 (YYYY-MM-DD). 생략하면 오늘'),
+    scope: z.enum(['mine', 'team']).optional().describe('"mine"(기본): 본인 태스크만. "team": 내가 속한 프로젝트 팀원 태스크 전체.'),
   },
-  async ({ date }) => {
+  async ({ date, scope }) => {
     try {
-      const result = await getTodayTasksTool.execute({ date });
+      const result = await getTodayTasksTool.execute({ date, scope });
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -88,6 +90,25 @@ server.tool(
   async (input) => {
     try {
       const result = await createTaskTool.execute(input);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { content: [{ type: 'text', text: `오류: ${message}` }], isError: true };
+    }
+  },
+);
+
+// Register getProjectStatus
+server.tool(
+  getProjectStatusTool.name,
+  getProjectStatusTool.description,
+  {
+    project_id: z.string().uuid().optional().describe('특정 프로젝트 UUID (생략하면 전체 요약)'),
+    include_tasks: z.boolean().optional().describe('태스크 목록 포함 여부 (project_id 지정 시에만 유효, 기본 false)'),
+  },
+  async ({ project_id, include_tasks }) => {
+    try {
+      const result = await getProjectStatusTool.execute({ project_id, include_tasks });
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
