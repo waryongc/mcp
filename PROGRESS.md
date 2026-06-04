@@ -1,5 +1,17 @@
 # PROGRESS
 
+## MCP 서버 툴
+
+### 완료
+
+- [x] `getTodayTasks` — 날짜별 태스크 조회, scope(mine/team) 파라미터, /auth/me user.id 추출 버그 수정
+- [x] `createTask` — 태스크 생성
+- [x] `updateTaskStatus` — 태스크 상태·진행률 변경
+- [x] `getRackStatus` — 서버 랙 현황 조회
+- [x] `getProjectStatus` — 프로젝트 요약(진행률·멤버 기여·마일스톤), project_id + include_tasks 옵션
+
+---
+
 ## 인스톨러 앱 (Electron)
 
 **목표:** 더블클릭으로 실행 → API 키 입력 → Claude Desktop 자동 설정
@@ -15,10 +27,11 @@
 
 ### 남은 작업
 
+- [ ] **태그 푸시해서 첫 릴리즈 생성** (아직 실제 빌드 안 됨)
 - [ ] 앱 아이콘 추가 (macOS `.icns`, Windows `.ico`, Linux `.png`)
-- [ ] macOS 코드 서명 & 공증 (Notarization) — 미서명 시 보안 경고 뜸
+- [ ] macOS 코드 서명 & 공증 — 미서명 시 "개발자를 확인할 수 없음" 경고 뜸
 - [ ] Windows 코드 서명 — 미서명 시 SmartScreen 경고 뜸
-- [ ] 재설치(업데이트) 시 기존 API 키 불러오기
+- [ ] 재설치 시 기존 API 키 불러오기
 - [ ] Node.js 미설치 시 다운로드 페이지 자동 열기
 - [ ] Claude Desktop 미설치 시 다운로드 페이지 자동 열기
 
