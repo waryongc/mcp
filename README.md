@@ -123,24 +123,81 @@ npm run dev        # tsx로 바로 실행 (개발용)
 npm run build && npm start   # 빌드 후 실행
 ```
 
-### Claude Desktop 연결 설정 예시
+### Claude Desktop 연결 설정
 
-`~/Library/Application Support/Claude/claude_desktop_config.json`:
+#### 1단계: 프로젝트 빌드
+
+```bash
+npm install
+npm run build
+# dist/index.js 가 생성됩니다
+```
+
+#### 2단계: 설정 파일 열기
+
+**macOS**
+
+```bash
+open ~/Library/Application\ Support/Claude/
+# claude_desktop_config.json 파일을 텍스트 편집기로 엽니다 (없으면 새로 만드세요)
+```
+
+**Windows**
+
+파일 탐색기 주소창에 아래 경로를 입력하거나 `Win+R` → 실행창에 붙여넣기:
+
+```
+%APPDATA%\Claude
+```
+
+`claude_desktop_config.json` 파일을 메모장 등으로 엽니다 (없으면 새로 만드세요).
+
+#### 3단계: 설정 내용 입력
+
+**macOS** — `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "yeorot": {
       "command": "node",
-      "args": ["/path/to/yeorot-mcp/dist/index.js"],
+      "args": ["/Users/사용자이름/프로젝트경로/yeorot-mcp/dist/index.js"],
       "env": {
         "YEOROT_API_URL": "http://localhost:3000/api/v1",
-        "YEOROT_API_KEY": "yrk_..."
+        "YEOROT_API_KEY": "yrk_발급받은키입력"
       }
     }
   }
 }
 ```
+
+> 실제 경로 확인: 프로젝트 폴더에서 `pwd` 명령어를 실행하면 현재 경로가 나옵니다.  
+> 예) `/Users/홍길동/dev/yeorot-mcp` → args에 `/Users/홍길동/dev/yeorot-mcp/dist/index.js` 입력
+
+**Windows** — `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "yeorot": {
+      "command": "node",
+      "args": ["C:\\Users\\사용자이름\\프로젝트경로\\yeorot-mcp\\dist\\index.js"],
+      "env": {
+        "YEOROT_API_URL": "http://localhost:3000/api/v1",
+        "YEOROT_API_KEY": "yrk_발급받은키입력"
+      }
+    }
+  }
+}
+```
+
+> Windows 경로는 역슬래시(`\`)를 두 개(`\\`)로 써야 합니다.  
+> 실제 경로 확인: 프로젝트 폴더에서 `cd` 명령어를 실행하면 현재 경로가 나옵니다.
+
+#### 4단계: Claude Desktop 재시작
+
+설정 파일 저장 후 Claude Desktop을 완전히 종료하고 다시 시작합니다.  
+채팅창 좌측 하단에 `yeorot` 도구가 표시되면 연결 성공입니다.
 
 ---
 
