@@ -4,6 +4,7 @@ import { getTodayKST } from '../dates.js';
 
 const InputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD').optional(),
+  scope: z.enum(['mine', 'team']).optional().default('mine'),
 });
 
 interface TaskItem {
@@ -14,10 +15,12 @@ interface TaskItem {
   progress: number;
   project_id: string | null;
   due_time: string | null;
+  assignee_id: string | null;
 }
 
 interface GetTodayTasksResult {
   date: string;
+  scope: 'mine' | 'team';
   count: number;
   tasks: TaskItem[];
 }
@@ -32,6 +35,11 @@ export const getTodayTasksTool = {
         type: 'string',
         description: '조회할 날짜 (YYYY-MM-DD). 생략하면 오늘(Asia/Seoul 기준)',
       },
+      scope: {
+        type: 'string',
+        enum: ['mine', 'team'],
+        description: '"mine"(기본): 본인 태스크만. "team": 내가 속한 프로젝트 팀원 태스크 전체.',
+      },
     },
     required: [],
   },
@@ -41,12 +49,20 @@ export const getTodayTasksTool = {
       throw new Error(parsed.error.errors[0]?.message ?? '입력값 오류');
     }
 
+    const { scope } = parsed.data;
     const date = parsed.data.date ?? getTodayKST();
-    const me = await yeorotFetch<{ id: string }>('/auth/me');
-    const tasks = await yeorotFetch<TaskItem[]>(`/tasks?date=${date}&assignee_id=${me.id}`);
+
+    let tasks: TaskItem[];
+    if (scope === 'mine') {
+      const me = await yeorotFetch<{ id: string }>('/auth/me');
+      tasks = await yeorotFetch<TaskItem[]>(`/tasks?date=${date}&assignee_id=${me.id}`);
+    } else {
+      tasks = await yeorotFetch<TaskItem[]>(`/tasks?date=${date}`);
+    }
 
     return {
       date,
+      scope,
       count: tasks.length,
       tasks: tasks.map((t) => ({
         id: t.id,
@@ -56,6 +72,7 @@ export const getTodayTasksTool = {
         progress: t.progress,
         project_id: t.project_id,
         due_time: t.due_time,
+        assignee_id: t.assignee_id,
       })),
     };
   },
