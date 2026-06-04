@@ -141,35 +141,52 @@ npm run build
 # dist/index.js 가 생성됩니다
 ```
 
-#### 2단계: 설정 파일 열기
+#### 2단계: 빌드된 파일 경로 확인
+
+클론한 폴더 안에서 아래 명령어를 실행해 경로를 복사해 둡니다.
+
+```bash
+# macOS
+pwd
+# 예: /Users/ji.park/yeorot-mcp  →  dist/index.js 경로는 /Users/ji.park/yeorot-mcp/dist/index.js
+
+# Windows (CMD)
+cd
+# 예: C:\Users\ji.park\yeorot-mcp  →  dist/index.js 경로는 C:\\Users\\ji.park\\yeorot-mcp\\dist\\index.js
+```
+
+#### 3단계: 설정 파일 열기
 
 **macOS**
 
 ```bash
 open ~/Library/Application\ Support/Claude/
-# claude_desktop_config.json 파일을 텍스트 편집기로 엽니다 (없으면 새로 만드세요)
 ```
+
+폴더가 열리면 `claude_desktop_config.json`을 텍스트 편집기로 엽니다.
 
 **Windows**
 
-파일 탐색기 주소창에 아래 경로를 입력하거나 `Win+R` → 실행창에 붙여넣기:
+`Win+R` → 실행창에 아래 경로 입력 후 열기:
 
 ```
 %APPDATA%\Claude
 ```
 
-`claude_desktop_config.json` 파일을 메모장 등으로 엽니다 (없으면 새로 만드세요).
+`claude_desktop_config.json`을 메모장 등으로 엽니다.
 
-#### 3단계: 설정 내용 입력
+#### 4단계: 설정 내용 추가
 
-**macOS** — `claude_desktop_config.json`:
+> **파일이 이미 존재하는 경우:** 기존 내용을 지우지 말고, 최상위에 `"mcpServers"` 키만 추가합니다.
+
+**파일이 비어있거나 새로 만드는 경우:**
 
 ```json
 {
   "mcpServers": {
     "yeorot": {
       "command": "node",
-      "args": ["/Users/사용자이름/프로젝트경로/yeorot-mcp/dist/index.js"],
+      "args": ["/Users/ji.park/yeorot-mcp/dist/index.js"],
       "env": {
         "YEOROT_API_URL": "https://yeorot.cloud/api/v1",
         "YEOROT_API_KEY": "yrk_발급받은키입력"
@@ -179,30 +196,31 @@ open ~/Library/Application\ Support/Claude/
 }
 ```
 
-> 실제 경로 확인: 프로젝트 폴더에서 `pwd` 명령어를 실행하면 현재 경로가 나옵니다.  
-> 예) `/Users/홍길동/dev/yeorot-mcp` → args에 `/Users/홍길동/dev/yeorot-mcp/dist/index.js` 입력
-
-**Windows** — `claude_desktop_config.json`:
+**파일에 기존 내용이 있는 경우:** `"mcpServers"` 블록을 최상위에 추가합니다.
 
 ```json
 {
   "mcpServers": {
     "yeorot": {
       "command": "node",
-      "args": ["C:\\Users\\사용자이름\\프로젝트경로\\yeorot-mcp\\dist\\index.js"],
+      "args": ["/Users/ji.park/yeorot-mcp/dist/index.js"],
       "env": {
         "YEOROT_API_URL": "https://yeorot.cloud/api/v1",
         "YEOROT_API_KEY": "yrk_발급받은키입력"
       }
     }
-  }
+  },
+  "기존키": "기존값은 그대로 유지"
 }
 ```
 
-> Windows 경로는 역슬래시(`\`)를 두 개(`\\`)로 써야 합니다.  
-> 실제 경로 확인: 프로젝트 폴더에서 `cd` 명령어를 실행하면 현재 경로가 나옵니다.
+**Windows**의 경우 경로의 역슬래시(`\`)를 두 개(`\\`)로 써야 합니다:
 
-#### 4단계: Claude Desktop 재시작
+```json
+"args": ["C:\\Users\\ji.park\\yeorot-mcp\\dist\\index.js"]
+```
+
+#### 5단계: Claude Desktop 재시작
 
 설정 파일 저장 후 Claude Desktop을 완전히 종료하고 다시 시작합니다.  
 채팅창 좌측 하단에 `yeorot` 도구가 표시되면 연결 성공입니다.
