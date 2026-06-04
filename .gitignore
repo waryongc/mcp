@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .env
+installer/node_modules/
+installer/release/
+installer/resources/mcp/

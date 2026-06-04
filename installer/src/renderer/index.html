@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'unsafe-inline'">
+  <title>yeorot MCP 설치</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+      background: #f5f5f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #1d1d1f;
+      -webkit-app-region: drag;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 40px 36px 36px;
+      width: 420px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.10);
+      -webkit-app-region: no-drag;
+    }
+
+    .brand { font-size: 13px; font-weight: 600; color: #6366f1; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+    h1 { font-size: 22px; font-weight: 700; color: #1d1d1f; margin-bottom: 6px; }
+    .desc { font-size: 13px; color: #86868b; margin-bottom: 28px; line-height: 1.5; }
+
+    .reqs { margin-bottom: 24px; display: flex; flex-direction: column; gap: 8px; }
+    .req {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #86868b;
+    }
+    .req .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #d1d1d6; flex-shrink: 0;
+    }
+    .req.ok .dot { background: #34c759; }
+    .req.fail .dot { background: #ff3b30; }
+    .req.ok { color: #1d1d1f; }
+
+    label { font-size: 13px; font-weight: 600; color: #1d1d1f; display: block; margin-bottom: 8px; }
+
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #d2d2d7;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      outline: none;
+      transition: border-color 0.15s;
+      color: #1d1d1f;
+      background: white;
+    }
+    input:focus { border-color: #6366f1; }
+    input::placeholder { color: #aeaeb2; font-family: -apple-system, sans-serif; }
+
+    .hint { font-size: 12px; color: #aeaeb2; margin-top: 6px; }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: opacity 0.15s, background 0.15s;
+      letter-spacing: -0.01em;
+    }
+    button:hover:not(:disabled) { background: #4f46e5; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status {
+      margin-top: 14px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+      white-space: pre-line;
+    }
+    .status.error { background: #fff2f2; color: #cc0000; display: block; }
+    .status.success { background: #f0fff4; color: #006400; display: block; }
+    .status.loading { background: #f0f0f5; color: #6366f1; display: block; }
+
+    /* 성공 화면 */
+    .success-view { display: none; text-align: center; }
+    .success-view .check { font-size: 48px; margin-bottom: 16px; }
+    .success-view h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .success-view p { font-size: 13px; color: #86868b; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- 설치 화면 -->
+    <div id="installView">
+      <div class="brand">yeorot</div>
+      <h1>MCP 설치</h1>
+      <p class="desc">Claude Desktop에서 yeorot 도구를 사용할 수 있도록<br>자동으로 설정합니다.</p>
+
+      <div class="reqs" id="reqs">
+        <div class="req" id="reqNode"><span class="dot"></span>Node.js 확인 중...</div>
+        <div class="req" id="reqClaude"><span class="dot"></span>Claude Desktop 확인 중...</div>
+      </div>
+
+      <label for="apiKey">API 키</label>
+      <input type="password" id="apiKey" placeholder="yrk_로 시작하는 키를 입력하세요" autocomplete="off">
+      <div class="hint">yeorot에서 발급받은 API 키를 입력하세요</div>
+
+      <button id="installBtn" disabled>설치하기</button>
+      <div id="status" class="status"></div>
+    </div>
+
+    <!-- 완료 화면 -->
+    <div id="successView" class="success-view">
+      <div class="check">✅</div>
+      <h2>설치 완료!</h2>
+      <p>Claude Desktop을 완전히 종료하고<br>다시 시작하면 yeorot 도구를 사용할 수 있습니다.</p>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

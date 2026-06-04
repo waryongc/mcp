@@ -1,0 +1,45 @@
+{
+  "name": "yeorot-mcp-installer",
+  "version": "0.1.0",
+  "description": "yeorot MCP 설치 프로그램",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "cloud.yeorot.mcp-installer",
+    "productName": "yeorot MCP 설치",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "mcp/"
+      }
+    ],
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["universal"] }
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Utility"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
