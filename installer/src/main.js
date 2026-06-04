@@ -1,4 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
+
+// M4 Mac에서 V8 JIT 컴파일러 버그 우회
+app.commandLine.appendSwitch('js-flags', '--no-opt')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
