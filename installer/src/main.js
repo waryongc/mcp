@@ -15,14 +15,14 @@ function getClaudeConfigPath() {
 }
 
 function getMcpInstallPath() {
-  return path.join(os.homedir(), '.yeorot-mcp', 'index.cjs')
+  return path.join(os.homedir(), '.yeorot-mcp', 'index.mjs')
 }
 
 function getBundledMcpPath() {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'mcp', 'bundle.cjs')
+    return path.join(process.resourcesPath, 'mcp', 'bundle.mjs')
   }
-  return path.join(__dirname, '..', '..', 'dist', 'bundle.cjs')
+  return path.join(__dirname, '..', '..', 'dist', 'bundle.mjs')
 }
 
 function checkNodeInstalled() {

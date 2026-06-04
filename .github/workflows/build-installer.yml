@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p installer/resources/mcp
-          cp dist/bundle.cjs installer/resources/mcp/bundle.cjs
+          cp dist/bundle.mjs installer/resources/mcp/bundle.mjs
 
       - name: Install installer dependencies
         working-directory: installer
