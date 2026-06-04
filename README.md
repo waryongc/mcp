@@ -125,9 +125,17 @@ npm run build && npm start   # 빌드 후 실행
 
 ### Claude Desktop 연결 설정
 
-#### 1단계: 프로젝트 빌드
+#### 0단계: 사전 준비
+
+- [Node.js 18+](https://nodejs.org) 설치
+- [Claude Desktop](https://claude.ai/download) 설치
+- yeorot API 키 발급 (`yrk_` 로 시작)
+
+#### 1단계: 레포 클론 & 빌드
 
 ```bash
+git clone https://github.com/waryongc/mcp.git yeorot-mcp
+cd yeorot-mcp
 npm install
 npm run build
 # dist/index.js 가 생성됩니다
