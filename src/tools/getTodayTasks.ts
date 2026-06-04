@@ -54,11 +54,10 @@ export const getTodayTasksTool = {
 
     let tasks: TaskItem[];
     if (scope === 'mine') {
-      const me = await yeorotFetch<Record<string, unknown>>('/auth/me');
-      process.stderr.write(`[yeorot-mcp] /auth/me 응답: ${JSON.stringify(me)}\n`);
-      const userId = me?.id as string | undefined;
-      if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
-        throw new Error(`/auth/me에서 유효한 UUID를 받지 못했습니다 (받은 값: ${JSON.stringify(me)})`);
+      const me = await yeorotFetch<{ user: { id: string } }>('/auth/me');
+      const userId = me?.user?.id;
+      if (!userId) {
+        throw new Error('/auth/me에서 유저 ID를 가져오지 못했습니다');
       }
       tasks = await yeorotFetch<TaskItem[]>(`/tasks?date=${date}&assignee_id=${userId}`);
     } else {
