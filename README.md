@@ -103,7 +103,7 @@ export const myTool = {
 `.env.example` 참고:
 
 ```env
-YEOROT_API_URL=http://localhost:3000/api/v1   # yeorot 서버 주소
+YEOROT_API_URL=https://yeorot.cloud/api/v1     # yeorot 서버 주소
 YEOROT_API_KEY=yrk_여기에_발급받은_키_입력    # API 키 (yrk_ 접두사 필수)
 TZ=Asia/Seoul                                  # 타임존 (기본값)
 YEOROT_TIMEOUT_MS=10000                        # 요청 타임아웃(ms)
@@ -163,7 +163,7 @@ open ~/Library/Application\ Support/Claude/
       "command": "node",
       "args": ["/Users/사용자이름/프로젝트경로/yeorot-mcp/dist/index.js"],
       "env": {
-        "YEOROT_API_URL": "http://localhost:3000/api/v1",
+        "YEOROT_API_URL": "https://yeorot.cloud/api/v1",
         "YEOROT_API_KEY": "yrk_발급받은키입력"
       }
     }
@@ -183,7 +183,7 @@ open ~/Library/Application\ Support/Claude/
       "command": "node",
       "args": ["C:\\Users\\사용자이름\\프로젝트경로\\yeorot-mcp\\dist\\index.js"],
       "env": {
-        "YEOROT_API_URL": "http://localhost:3000/api/v1",
+        "YEOROT_API_URL": "https://yeorot.cloud/api/v1",
         "YEOROT_API_KEY": "yrk_발급받은키입력"
       }
     }
