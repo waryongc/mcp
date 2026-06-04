@@ -42,7 +42,8 @@ export const getTodayTasksTool = {
     }
 
     const date = parsed.data.date ?? getTodayKST();
-    const tasks = await yeorotFetch<TaskItem[]>(`/tasks?date=${date}`);
+    const me = await yeorotFetch<{ id: string }>('/auth/me');
+    const tasks = await yeorotFetch<TaskItem[]>(`/tasks?date=${date}&assignee_id=${me.id}`);
 
     return {
       date,
