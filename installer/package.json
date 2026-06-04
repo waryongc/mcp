@@ -2,6 +2,10 @@
   "name": "yeorot-mcp-installer",
   "version": "0.1.0",
   "description": "yeorot MCP 설치 프로그램",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/waryongc/mcp.git"
+  },
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
