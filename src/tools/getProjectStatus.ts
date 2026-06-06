@@ -49,18 +49,17 @@ type GetProjectStatusResult =
 export const getProjectStatusTool = {
   name: 'getProjectStatus',
   description:
-    '프로젝트 현황을 조회합니다. project_id 없으면 전체 프로젝트 요약(진행률·멤버 기여도·마일스톤), ' +
-    'project_id 있으면 해당 프로젝트 상세 + 선택적으로 태스크 목록.',
+    '프로젝트 현황을 조회합니다. 전체 프로젝트 진행률 개요, 특정 프로젝트의 멤버 기여도·마일스톤·태스크 목록 확인 시 사용.',
   inputSchema: {
     type: 'object' as const,
     properties: {
       project_id: {
         type: 'string',
-        description: '특정 프로젝트 UUID (생략하면 전체 요약)',
+        description: '특정 프로젝트 UUID. 생략하면 전체 프로젝트 요약 목록 반환.',
       },
       include_tasks: {
         type: 'boolean',
-        description: '태스크 목록 포함 여부 (project_id 지정 시에만 유효, 기본 false)',
+        description: 'true이면 태스크 목록 포함. project_id 지정 시에만 유효. 기본 false.',
       },
     },
     required: [],

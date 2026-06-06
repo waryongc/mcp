@@ -33,13 +33,14 @@ type GetRackStatusResult = { racks: RackSummary[] } | { rack: RackDetail };
 
 export const getRackStatusTool = {
   name: 'getRackStatus',
-  description: '서버 랙 현황을 조회합니다. rack_id 없으면 전체 목록, 있으면 슬롯 상세 반환.',
+  description:
+    '서버 랙 현황을 조회합니다. 랙 가용 슬롯·장비 배치 확인, 특정 랙 상세 조회 시 사용. rack_id 생략 시 전체 랙 목록 반환.',
   inputSchema: {
     type: 'object' as const,
     properties: {
       rack_id: {
         type: 'string',
-        description: '특정 랙 UUID (생략하면 전체 목록)',
+        description: '특정 랙의 UUID. 생략하면 전체 랙 목록 반환.',
       },
     },
     required: [],

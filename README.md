@@ -22,27 +22,52 @@
 
 ## MCP란?
 
-**MCP(Model Context Protocol)** 는 AI 모델(Claude, GPT 등)이 외부 도구·데이터 소스와 표준화된 방식으로 소통하기 위한 오픈 프로토콜입니다.
+**MCP(Model Context Protocol)** 는 Anthropic이 주도하는 오픈 표준으로, AI 애플리케이션이 외부 도구·데이터 소스와 **JSON-RPC 2.0** 기반으로 표준화된 방식으로 소통할 수 있게 합니다. 플러그인처럼 MCP 서버를 연결하면 AI가 직접 API 호출, DB 조회, 파일 조작 등을 수행할 수 있습니다.
+
+### 공식 아키텍처: 3계층 구조
 
 ```
-사용자 ──▶ AI(Claude) ──▶ MCP 서버 ──▶ 외부 시스템(DB, API, 파일...)
-                 ◀─────────────────────────────────────
+┌──────────────────────────────────────────────────────┐
+│  MCP Host  (Claude Desktop / Claude Code)            │
+│  ┌────────────────────┐                              │
+│  │   MCP Client       │──── JSON-RPC 2.0 ──────────▶ │  MCP Server
+│  └────────────────────┘                              │  (이 프로젝트)
+└──────────────────────────────────────────────────────┘       │
+                                                               ▼
+                                                     yeorot REST API
 ```
 
-AI가 "이 도구를 쓰고 싶다"고 요청하면 MCP 서버가 실제 작업을 실행하고 결과를 돌려줍니다.
+| 계층 | 역할 | 이 프로젝트에서 |
+|---|---|---|
+| **MCP Host** | 사용자가 직접 쓰는 AI 앱 | Claude Desktop / Claude Code |
+| **MCP Client** | Host 내부의 MCP 프로토콜 처리 | Claude Desktop 내장 클라이언트 |
+| **MCP Server** | 도구·데이터를 노출하는 프로세스 | **이 레포 (yeorot-mcp)** |
+
+### MCP 서버의 3가지 프리미티브
+
+| 프리미티브 | 설명 | yeorot-mcp |
+|---|---|---|
+| **Tools** | AI가 호출하는 함수 | ✅ 사용 (7개 Tool 등록) |
+| **Resources** | AI가 읽는 정적 데이터·컨텍스트 | — 미사용 |
+| **Prompts** | 재사용 가능한 프롬프트 템플릿 | — 미사용 |
+
+이 서버는 **Tools** 프리미티브만 사용합니다. Claude가 대화 중 필요하다고 판단하면 MCP Client를 통해 Tool을 호출하고, 서버가 yeorot API를 실행한 뒤 결과를 반환합니다.
 
 ### 전송 방식: Stdio
 
-이 서버는 **stdio 전송**을 사용합니다. Claude Desktop / Claude Code가 이 프로세스를 자식 프로세스로 실행하고, 표준 입출력으로 JSON-RPC 메시지를 주고받습니다.
+이 서버는 **stdio 전송**을 사용합니다. MCP Host가 이 프로세스를 자식 프로세스로 spawn하고, 표준 입출력으로 JSON-RPC 메시지를 주고받습니다.
 
 ```
-Claude Desktop / Claude Code
+MCP Host (Claude Desktop / Claude Code)
     │  spawn
     ▼
-yeorot-mcp (이 프로세스)
-    │  stdin  ──▶  JSON-RPC 요청 수신
-    │  stdout ──▶  JSON-RPC 응답 송신
-    │  stderr ──▶  로그 출력
+MCP Server: yeorot-mcp (이 프로세스)
+    │  stdin  ◀──  JSON-RPC 요청 수신 (tool 호출)
+    │  stdout ──▶  JSON-RPC 응답 송신 (tool 결과)
+    │  stderr ──▶  로그 출력 (디버깅용, AI 응답에 노출 안 됨)
+    │
+    ▼
+yeorot REST API
 ```
 
 ---
@@ -53,9 +78,11 @@ yeorot-mcp (이 프로세스)
 |---|---|---|
 | `getTodayTasks` | 날짜별 태스크 조회 | `date` (선택, YYYY-MM-DD), `scope` (mine/team) |
 | `createTask` | 새 태스크 생성 | `title` (필수), `planned_date`, `priority`, `due_time` 등 |
-| `updateTaskStatus` | 태스크 상태·진행률 변경 | `id` (UUID), `status`, `progress`, `blocked_reason` |
+| `updateTaskStatus` | 태스크 상태·진행률·제목·날짜·우선순위 등 변경 | `id` (UUID), `status`, `progress`, `title`, `priority`, `planned_date` 등 |
 | `getRackStatus` | 서버 랙 현황 조회 | `rack_id` (선택, UUID) |
 | `getProjectStatus` | 프로젝트 현황·진행률·멤버 기여도 조회 | `project_id` (선택, UUID), `include_tasks` |
+| `searchTasks` | 키워드로 태스크·프로젝트 검색 | `q` (필수, 검색 키워드 2자 이상) |
+| `getStats` | 기간별 생산성 통계 조회 | `period` (day/week/month), `date`, `from`, `to` |
 
 ---
 

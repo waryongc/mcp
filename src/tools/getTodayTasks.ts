@@ -27,18 +27,19 @@ interface GetTodayTasksResult {
 
 export const getTodayTasksTool = {
   name: 'getTodayTasks',
-  description: '오늘(또는 지정한 날짜)의 태스크 목록을 조회합니다.',
+  description:
+    '날짜별 태스크 목록을 조회합니다. 오늘 할 일 확인, 스탠드업 준비, 팀원 진행상황 파악 시 사용. scope=team으로 팀 전체 태스크 조회 가능.',
   inputSchema: {
     type: 'object' as const,
     properties: {
       date: {
         type: 'string',
-        description: '조회할 날짜 (YYYY-MM-DD). 생략하면 오늘(Asia/Seoul 기준)',
+        description: '조회할 날짜 (YYYY-MM-DD). 생략하면 오늘(Asia/Seoul 기준). 어제·내일 등 특정 날짜 지정 가능.',
       },
       scope: {
         type: 'string',
         enum: ['mine', 'team'],
-        description: '"mine"(기본): 본인 태스크만. "team": 내가 속한 프로젝트 팀원 태스크 전체.',
+        description: '"mine"(기본): 내 태스크만 조회. "team": 내가 속한 프로젝트의 팀원 전체 태스크 조회.',
       },
     },
     required: [],

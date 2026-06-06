@@ -11,10 +11,15 @@
 - [x] `getProjectStatus` — 프로젝트 요약(진행률·멤버 기여도·마일스톤), project_id + include_tasks 옵션
 - [x] 업데이트 체크 — GitHub Releases 비교, 24시간 캐시, 새 버전 있으면 AI 응답에 notice 포함
 
+- [x] `searchTasks` — 키워드 기반 태스크·프로젝트 검색 (`/search?q=`)
+- [x] `getStats` — 기간별(day/week/month) 생산성 통계 조회 (`/stats`)
+- [x] `updateTaskStatus` 확장 — title·priority·planned_date·due_time·project_id·estimated_minutes·story_points 필드 추가
+- [x] Tool description 개선 — 사용 맥락 기반 설명으로 전면 개선
+
 ### 추가 예정
 
-- [ ] `getWeeklyReview` — 주간 태스크 완료율·통계 조회
-- [ ] `searchTasks` — 키워드 기반 태스크 검색
+- [ ] `deleteTask` — 태스크 삭제
+- [ ] `moveTask` — 태스크 날짜 이동
 
 ---
 

@@ -25,17 +25,18 @@ interface CreateTaskResult {
 
 export const createTaskTool = {
   name: 'createTask',
-  description: '새로운 태스크를 생성합니다.',
+  description:
+    '새 태스크를 생성합니다. 오늘 또는 특정 날짜에 할 일 추가, 프로젝트에 작업 등록 시 사용. planned_date 생략 시 오늘 날짜로 생성.',
   inputSchema: {
     type: 'object' as const,
     properties: {
       title: {
         type: 'string',
-        description: '태스크 제목 (필수)',
+        description: '태스크 제목 (필수, 1자 이상)',
       },
       planned_date: {
         type: 'string',
-        description: '계획 날짜 YYYY-MM-DD (생략하면 오늘)',
+        description: '계획 날짜 (YYYY-MM-DD). 생략하면 오늘.',
       },
       description: {
         type: 'string',
@@ -44,7 +45,7 @@ export const createTaskTool = {
       priority: {
         type: 'string',
         enum: ['P1', 'P2', 'P3', 'P4'],
-        description: '우선순위 (선택)',
+        description: '우선순위: P1(최고)~P4(최저). 생략 가능.',
       },
       status: {
         type: 'string',
@@ -53,15 +54,15 @@ export const createTaskTool = {
       },
       due_time: {
         type: 'string',
-        description: '마감 시간 HH:MM 형식 (선택)',
+        description: '마감 시간 HH:MM 형식 (예: 14:00). 선택.',
       },
       project_id: {
         type: 'string',
-        description: '프로젝트 UUID (선택)',
+        description: '연결할 프로젝트 UUID. 선택.',
       },
       estimated_minutes: {
         type: 'number',
-        description: '예상 소요 시간(분) (선택)',
+        description: '예상 소요 시간(분). 예: 30, 60, 120. 선택.',
       },
     },
     required: ['title'],
