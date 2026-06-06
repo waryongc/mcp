@@ -1,14 +1,28 @@
 # yeorot-mcp
 
-yeorot REST API를 Claude(AI)가 직접 호출할 수 있도록 감싼 **MCP(Model Context Protocol) 서버**입니다.
+[yeorot](https://github.com/waryongc/yeorot) REST API를 Claude(AI)가 직접 호출할 수 있도록 감싼 **MCP(Model Context Protocol) 서버**입니다.
+
+사용자가 말로 yeorot을 조작할 수 있게 해주는 Claude ↔ yeorot 중간 레이어.
 
 ---
 
-## MCP란 무엇인가?
+## 목차
 
-### 핵심 개념
+- [MCP란?](#mcp란)
+- [등록된 Tool 목록](#등록된-tool-목록)
+- [프로젝트 구조](#프로젝트-구조)
+- [환경 변수](#환경-변수)
+- [로컬 실행](#로컬-실행)
+- [Claude Desktop 연결 설정](#claude-desktop-연결-설정)
+- [인스톨러 앱](#인스톨러-앱)
+- [Tool 추가 방법](#tool-추가-방법)
+- [기술 스택](#기술-스택)
 
-**MCP(Model Context Protocol)** 는 AI 모델(Claude, GPT 등)이 외부 도구·데이터 소스와 표준화된 방식으로 소통하기 위한 오픈 프로토콜입니다. Anthropic이 설계했으며 2024년 공개됐습니다.
+---
+
+## MCP란?
+
+**MCP(Model Context Protocol)** 는 AI 모델(Claude, GPT 등)이 외부 도구·데이터 소스와 표준화된 방식으로 소통하기 위한 오픈 프로토콜입니다.
 
 ```
 사용자 ──▶ AI(Claude) ──▶ MCP 서버 ──▶ 외부 시스템(DB, API, 파일...)
@@ -17,46 +31,12 @@ yeorot REST API를 Claude(AI)가 직접 호출할 수 있도록 감싼 **MCP(Mod
 
 AI가 "이 도구를 쓰고 싶다"고 요청하면 MCP 서버가 실제 작업을 실행하고 결과를 돌려줍니다.
 
-### 기존 방식과의 차이
-
-| | 기존 Function Calling | MCP |
-|---|---|---|
-| 표준화 | 모델마다 다름 | 단일 프로토콜 |
-| 배포 | AI 코드에 함께 | 별도 프로세스 |
-| 재사용 | 불가 | 어느 MCP 클라이언트든 연결 가능 |
-| 보안 | AI가 직접 접근 | 서버가 격리·제어 |
-
-### 3가지 핵심 기능 유형
-
-- **Tool** — AI가 실행할 수 있는 함수 (이 프로젝트가 구현하는 것)
-- **Resource** — AI가 읽을 수 있는 데이터 소스 (파일, DB 행 등)
-- **Prompt** — 재사용 가능한 프롬프트 템플릿
-
----
-
-## 이 프로젝트의 구조
-
-```
-yeorot-mcp/
-├── src/
-│   ├── index.ts          # MCP 서버 진입점 — 도구 등록 & 서버 시작
-│   ├── config.ts         # 환경변수 검증 (Zod)
-│   ├── client.ts         # yeorot API HTTP 클라이언트
-│   ├── dates.ts          # KST 날짜 유틸
-│   └── tools/
-│       ├── getTodayTasks.ts     # 오늘 태스크 조회
-│       ├── createTask.ts        # 태스크 생성
-│       ├── updateTaskStatus.ts  # 태스크 상태 변경
-│       └── getRackStatus.ts     # 서버 랙 현황 조회
-└── package.json
-```
-
 ### 전송 방식: Stdio
 
-이 서버는 **stdio 전송**을 사용합니다. MCP 클라이언트(Claude Desktop 등)가 이 프로세스를 자식 프로세스로 실행하고, 표준 입출력(stdin/stdout)으로 JSON-RPC 메시지를 주고받습니다.
+이 서버는 **stdio 전송**을 사용합니다. Claude Desktop / Claude Code가 이 프로세스를 자식 프로세스로 실행하고, 표준 입출력으로 JSON-RPC 메시지를 주고받습니다.
 
 ```
-Claude Desktop
+Claude Desktop / Claude Code
     │  spawn
     ▼
 yeorot-mcp (이 프로세스)
@@ -71,91 +51,109 @@ yeorot-mcp (이 프로세스)
 
 | Tool | 설명 | 주요 파라미터 |
 |---|---|---|
-| `getTodayTasks` | 날짜별 태스크 조회 | `date` (선택, YYYY-MM-DD) |
+| `getTodayTasks` | 날짜별 태스크 조회 | `date` (선택, YYYY-MM-DD), `scope` (mine/team) |
 | `createTask` | 새 태스크 생성 | `title` (필수), `planned_date`, `priority`, `due_time` 등 |
-| `updateTaskStatus` | 태스크 상태·진행률 변경 | `id` (UUID), `status`, `progress` |
+| `updateTaskStatus` | 태스크 상태·진행률 변경 | `id` (UUID), `status`, `progress`, `blocked_reason` |
 | `getRackStatus` | 서버 랙 현황 조회 | `rack_id` (선택, UUID) |
+| `getProjectStatus` | 프로젝트 현황·진행률·멤버 기여도 조회 | `project_id` (선택, UUID), `include_tasks` |
 
 ---
 
-## Tool 구현 패턴
+## 프로젝트 구조
 
-모든 Tool은 동일한 구조를 따릅니다:
-
-```typescript
-export const myTool = {
-  name: 'myTool',           // AI가 호출할 이름
-  description: '...',       // AI가 이 도구의 용도를 판단하는 기준
-  inputSchema: { ... },     // JSON Schema — AI에게 전달되는 파라미터 명세
-  async execute(input) {    // 실제 실행 로직
-    const parsed = InputSchema.safeParse(input);  // Zod 검증
-    // ... API 호출
-  }
-};
 ```
-
-`index.ts`에서 `server.tool(name, description, zodSchema, handler)` 로 등록합니다.
+yeorot-mcp/
+├── src/
+│   ├── index.ts              # MCP 서버 진입점 — 도구 등록 & 서버 시작
+│   ├── config.ts             # 환경변수 검증 (Zod)
+│   ├── client.ts             # yeorot API HTTP 클라이언트
+│   ├── dates.ts              # KST 날짜 유틸
+│   ├── update.ts             # 업데이트 체크 (GitHub Releases, 24시간 캐시)
+│   ├── version.ts            # 현재 버전 상수
+│   └── tools/
+│       ├── getTodayTasks.ts      # 날짜별 태스크 조회
+│       ├── createTask.ts         # 태스크 생성
+│       ├── updateTaskStatus.ts   # 태스크 상태·진행률 변경
+│       ├── getRackStatus.ts      # 서버 랙 현황 조회
+│       └── getProjectStatus.ts   # 프로젝트 현황 조회
+├── installer/                # Electron GUI 설치 프로그램
+│   ├── src/
+│   └── package.json
+├── dist/                     # 빌드 결과물
+│   ├── index.js              # tsc 컴파일 결과
+│   └── bundle.mjs            # esbuild ESM 번들 (인스톨러용)
+├── .github/workflows/
+│   └── build-installer.yml   # 태그 푸시 → 자동 빌드 & GitHub Release
+├── .env.example
+├── package.json
+└── tsconfig.json
+```
 
 ---
 
 ## 환경 변수
 
-`.env.example` 참고:
+`.env.example` 파일을 복사해서 사용하세요.
 
-```env
-YEOROT_API_URL=https://yeorot.cloud/api/v1     # yeorot 서버 주소
-YEOROT_API_KEY=yrk_여기에_발급받은_키_입력    # API 키 (yrk_ 접두사 필수)
-TZ=Asia/Seoul                                  # 타임존 (기본값)
-YEOROT_TIMEOUT_MS=10000                        # 요청 타임아웃(ms)
-```
+| 변수 | 필수 | 기본값 | 설명 |
+|---|---|---|---|
+| `YEOROT_API_URL` | ✅ | — | yeorot 서버 주소 (예: `https://yeorot.cloud/api/v1`) |
+| `YEOROT_API_KEY` | ✅ | — | API 키 (`yrk_` 접두사 필수) |
+| `TZ` | | `Asia/Seoul` | 타임존 |
+| `YEOROT_TIMEOUT_MS` | | `10000` | 요청 타임아웃 (ms) |
 
 ---
 
 ## 로컬 실행
 
 ```bash
+# 1. 환경 변수 설정
 cp .env.example .env
 # .env에 실제 값 입력
 
+# 2. 의존성 설치
 npm install
-npm run dev        # tsx로 바로 실행 (개발용)
-# 또는
-npm run build && npm start   # 빌드 후 실행
+
+# 3. 개발 모드 실행 (tsx 직접 실행)
+npm run dev
+
+# 또는 빌드 후 실행
+npm run build && npm start
 ```
 
-### Claude Desktop 연결 설정
+---
 
-#### 0단계: 사전 준비
+## Claude Desktop 연결 설정
+
+### 사전 준비
 
 - [Node.js 18+](https://nodejs.org) 설치
 - [Claude Desktop](https://claude.ai/download) 설치
 - yeorot API 키 발급 (`yrk_` 로 시작)
 
-#### 1단계: 레포 클론 & 빌드
+### 1단계: 레포 클론 & 빌드
 
 ```bash
 git clone https://github.com/waryongc/mcp.git yeorot-mcp
 cd yeorot-mcp
 npm install
 npm run build
-# dist/index.js 가 생성됩니다
+# dist/index.js 생성됨
 ```
 
-#### 2단계: 빌드된 파일 경로 확인
-
-클론한 폴더 안에서 아래 명령어를 실행해 경로를 복사해 둡니다.
+### 2단계: 빌드된 파일 경로 확인
 
 ```bash
-# macOS
+# macOS / Linux
 pwd
 # 예: /Users/ji.park/yeorot-mcp  →  dist/index.js 경로는 /Users/ji.park/yeorot-mcp/dist/index.js
 
 # Windows (CMD)
 cd
-# 예: C:\Users\ji.park\yeorot-mcp  →  dist/index.js 경로는 C:\\Users\\ji.park\\yeorot-mcp\\dist\\index.js
+# 예: C:\Users\ji.park\yeorot-mcp  →  경로는 C:\\Users\\ji.park\\yeorot-mcp\\dist\\index.js
 ```
 
-#### 3단계: 설정 파일 열기
+### 3단계: 설정 파일 열기
 
 **macOS**
 
@@ -163,23 +161,17 @@ cd
 open ~/Library/Application\ Support/Claude/
 ```
 
-폴더가 열리면 `claude_desktop_config.json`을 텍스트 편집기로 엽니다.
-
-**Windows**
-
-`Win+R` → 실행창에 아래 경로 입력 후 열기:
+**Windows** — `Win+R` → 실행창에 입력:
 
 ```
 %APPDATA%\Claude
 ```
 
-`claude_desktop_config.json`을 메모장 등으로 엽니다.
+`claude_desktop_config.json`을 텍스트 편집기로 엽니다.
 
-#### 4단계: 설정 내용 추가
+### 4단계: 설정 추가
 
-> **파일이 이미 존재하는 경우:** 기존 내용을 지우지 말고, 최상위에 `"mcpServers"` 키만 추가합니다.
-
-**파일이 비어있거나 새로 만드는 경우:**
+> **파일에 기존 내용이 있는 경우:** 기존 내용을 지우지 말고 `"mcpServers"` 키만 추가합니다.
 
 ```json
 {
@@ -196,40 +188,87 @@ open ~/Library/Application\ Support/Claude/
 }
 ```
 
-**파일에 기존 내용이 있는 경우:** `"mcpServers"` 블록을 최상위에 추가합니다.
-
-```json
-{
-  "mcpServers": {
-    "yeorot": {
-      "command": "node",
-      "args": ["/Users/ji.park/yeorot-mcp/dist/index.js"],
-      "env": {
-        "YEOROT_API_URL": "https://yeorot.cloud/api/v1",
-        "YEOROT_API_KEY": "yrk_발급받은키입력"
-      }
-    }
-  },
-  "기존키": "기존값은 그대로 유지"
-}
-```
-
-**Windows**의 경우 경로의 역슬래시(`\`)를 두 개(`\\`)로 써야 합니다:
+Windows 경로는 역슬래시를 두 개(`\\`)로 작성합니다:
 
 ```json
 "args": ["C:\\Users\\ji.park\\yeorot-mcp\\dist\\index.js"]
 ```
 
-#### 5단계: Claude Desktop 재시작
+### 5단계: Claude Desktop 재시작
 
-설정 파일 저장 후 Claude Desktop을 완전히 종료하고 다시 시작합니다.  
+설정 파일 저장 후 Claude Desktop을 완전히 종료하고 다시 시작합니다.
 채팅창 좌측 하단에 `yeorot` 도구가 표시되면 연결 성공입니다.
+
+---
+
+## 인스톨러 앱
+
+더블클릭 한 번으로 설치를 완료하는 **Electron GUI 설치 프로그램**입니다.
+API 키만 입력하면 MCP 서버 파일 복사 + Claude Desktop 설정까지 자동으로 처리합니다.
+
+### 다운로드
+
+[GitHub Releases](https://github.com/waryongc/mcp/releases) 페이지에서 OS별 설치 파일을 받습니다.
+
+| OS | 파일 |
+|---|---|
+| macOS | `.dmg` |
+| Windows | `.exe` |
+| Linux | `.AppImage` |
+
+### 릴리즈 방법 (개발자용)
+
+```bash
+git tag installer-v0.x.0
+git push origin installer-v0.x.0
+# GitHub Actions가 자동으로 빌드 & Release 생성
+```
+
+---
+
+## Tool 추가 방법
+
+1. `src/tools/새도구.ts` 생성:
+
+```typescript
+import { z } from 'zod';
+import { yeorotFetch } from '../client.js';
+
+const InputSchema = z.object({ /* ... */ });
+
+export const myTool = {
+  name: 'myTool',
+  description: 'AI가 이 도구의 용도를 판단하는 기준 설명',
+  inputSchema: {
+    type: 'object' as const,
+    properties: { /* JSON Schema */ },
+    required: [],
+  },
+  async execute(rawInput: unknown) {
+    const parsed = InputSchema.safeParse(rawInput);
+    if (!parsed.success) throw new Error(parsed.error.errors[0]?.message ?? '입력값 오류');
+    return yeorotFetch('/your-endpoint');
+  },
+};
+```
+
+2. `src/index.ts`에 import 후 `server.tool(...)` 등록
+3. `npm run build` 로 컴파일 확인
+4. `PROGRESS.md` 업데이트
+
+yeorot 백엔드 API가 이미 있으면 MCP 쪽만 작업하면 됩니다.
 
 ---
 
 ## 기술 스택
 
-- **TypeScript** + **Node.js** (ESM)
-- **@modelcontextprotocol/sdk** — MCP 서버 구현체
-- **Zod** — 런타임 입력 검증 및 환경변수 검증
-- **dotenv** — 환경변수 로딩
+| 영역 | 기술 |
+|---|---|
+| 언어 | TypeScript (ESM) |
+| 런타임 | Node.js 18+ |
+| MCP SDK | @modelcontextprotocol/sdk |
+| 입력 검증 | Zod |
+| 환경 변수 | dotenv |
+| 번들러 | esbuild |
+| 인스톨러 | Electron + electron-builder |
+| CI/CD | GitHub Actions |
