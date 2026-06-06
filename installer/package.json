@@ -17,14 +17,21 @@
     "build:win": "electron-builder --win",
     "build:linux": "electron-builder --linux"
   },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "@electron/notarize": "^2.5.0"
+  },
   "build": {
     "appId": "cloud.yeorot.mcp-installer",
     "productName": "yeorot MCP 설치",
+    "afterSign": "scripts/notarize.js",
     "directories": {
       "output": "release"
     },
     "files": [
-      "src/**/*"
+      "src/**/*",
+      "scripts/**/*"
     ],
     "extraResources": [
       {
@@ -36,7 +43,12 @@
       "target": [
         { "target": "dmg", "arch": ["universal"] }
       ],
-      "category": "public.app-category.utilities"
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": false
     },
     "win": {
       "target": "nsis"
@@ -45,9 +57,5 @@
       "target": ["AppImage", "deb"],
       "category": "Utility"
     }
-  },
-  "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
   }
 }

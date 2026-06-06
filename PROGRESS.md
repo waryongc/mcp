@@ -40,8 +40,12 @@
 
 ### 남은 작업
 
+- [ ] **macOS 코드 서명 & 공증** — 설정 파일 준비 완료, **Apple Developer 가입 + GitHub Secrets 등록만 하면 됨**
+  - 상세 절차: [`docs/macos-code-signing.md`](docs/macos-code-signing.md)
+  - 필요한 작업: Apple Developer 가입($99/년) → Developer ID Application 인증서 발급 → P12 내보내기 → GitHub Secrets 6개 등록
+  - 등록할 Secrets: `BUILD_CERTIFICATE_BASE64`, `P12_PASSWORD`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`
+  - Secrets 등록 후 `installer-v0.3.0` 태그 → 자동 서명 + 공증 빌드
 - [ ] 앱 아이콘 추가 (macOS `.icns`, Windows `.ico`, Linux `.png`)
-- [ ] macOS 코드 서명 & 공증 — 미서명 시 "개발자를 확인할 수 없음" 경고
 - [ ] Windows 코드 서명 — 미서명 시 SmartScreen 경고
 - [ ] 재설치 시 기존 API 키 불러오기
 - [ ] Node.js 미설치 시 다운로드 페이지 자동 열기

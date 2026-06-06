@@ -43,6 +43,45 @@ jobs:
           mkdir -p installer/resources/mcp
           cp dist/bundle.mjs installer/resources/mcp/bundle.mjs
 
+      # ──────────────────────────────────────────────────────────────
+      # macOS: Apple Developer 인증서 import (Secrets 있을 때만 실행)
+      # BUILD_CERTIFICATE_BASE64 Secret이 없으면 서명 없이 빌드
+      # ──────────────────────────────────────────────────────────────
+      - name: Import Apple Developer certificate (macOS only)
+        if: matrix.platform == 'mac' && env.BUILD_CERTIFICATE_BASE64 != ''
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # base64 → .p12 복원
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          # 임시 Keychain 생성
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # 인증서 import
+          security import $CERTIFICATE_PATH \
+            -P "$P12_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k $KEYCHAIN_PATH
+
+          # codesign이 암호 없이 접근할 수 있도록 파티션 리스트 설정
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" \
+            $KEYCHAIN_PATH
+
+          # 검색 Keychain에 추가
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
       - name: Install installer dependencies
         working-directory: installer
         run: npm install
@@ -51,7 +90,24 @@ jobs:
         working-directory: installer
         run: npm run build:${{ matrix.platform }}
         env:
+          # 인증서 위치 (Secrets 있을 때만 유효)
+          CSC_LINK: ${{ runner.temp }}/build_certificate.p12
+          CSC_KEY_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          # 공증용 (notarize.js에서 BUILD_CERTIFICATE_BASE64 없으면 자동 스킵)
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CI: "true"
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ──────────────────────────────────────────────────────────────
+      # macOS: 임시 Keychain 정리 (항상 실행)
+      # ──────────────────────────────────────────────────────────────
+      - name: Clean up keychain (macOS only)
+        if: matrix.platform == 'mac' && always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
