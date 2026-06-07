@@ -107,6 +107,34 @@ Electron 기반 GUI 설치 프로그램. 더블클릭 → API 키 입력 → Cla
 - 릴리즈: `git tag installer-v0.x.0 && git push origin installer-v0.x.0`
 - GitHub Actions가 태그 푸시 시 자동 빌드 & Release 생성
 
+### CI 빌드 흐름
+
+```
+npm run bundle          → dist/bundle.mjs 생성
+cp → installer/resources/bundle.mjs  (extraResources가 resources/mcp/에 패키징)
+electron-builder        → .exe / .dmg 생성
+```
+
+`installer/resources/` 는 로컬에서 항상 비어있어야 정상 — CI가 빌드 시점에 채운다.
+
+### GitHub Actions Secrets (코드 서명용)
+
+| Secret | 역할 | 없으면 |
+|---|---|---|
+| `BUILD_CERTIFICATE_BASE64` | Apple Developer P12 인증서 base64 인코딩값 | 서명 없이 빌드 (macOS 경고) |
+| `P12_PASSWORD` | P12 파일 비밀번호 | (위와 동일) |
+| `KEYCHAIN_PASSWORD` | CI 임시 Keychain 비밀번호 (임의 값 가능) | (위와 동일) |
+| `APPLE_ID` | 공증용 Apple 계정 이메일 | 공증 생략 |
+| `APPLE_APP_SPECIFIC_PASSWORD` | 공증용 앱 전용 비밀번호 | (위와 동일) |
+| `APPLE_TEAM_ID` | Apple Developer Team ID 10자리 | (위와 동일) |
+
+**Secrets가 없어도 빌드는 성공한다.** Secret 없으면 `CSC_IDENTITY_AUTO_DISCOVERY=false`로 설정되어 서명 단계를 건너뜀.
+
+- **Windows**: SmartScreen 경고 표시되지만 "추가 정보 → 실행"으로 설치 가능. 기능 영향 없음.
+- **macOS**: 15.1 미만은 우클릭 → 열기로 가능. 15.1 이상은 서명 없이 배포 불가 (Apple Developer 가입 필요 — `docs/macos-code-signing.md` 참고).
+
+Secrets 등록 위치: GitHub → Settings → Secrets and variables → Actions
+
 ---
 
 ## 환경 변수
