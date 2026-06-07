@@ -90,10 +90,11 @@ jobs:
         working-directory: installer
         run: npm run build:${{ matrix.platform }}
         env:
-          # 인증서 위치 (Secrets 있을 때만 유효)
-          CSC_LINK: ${{ runner.temp }}/build_certificate.p12
+          # CSC_LINK: Secret 없으면 설정하지 않음 (파일 없는 경로 지정 시 빌드 실패)
+          CSC_LINK: ${{ secrets.BUILD_CERTIFICATE_BASE64 != '' && format('{0}/build_certificate.p12', runner.temp) || '' }}
           CSC_KEY_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          # 공증용 (notarize.js에서 BUILD_CERTIFICATE_BASE64 없으면 자동 스킵)
+          # Secret 없으면 서명·공증 없이 빌드
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.BUILD_CERTIFICATE_BASE64 != '' && 'true' || 'false' }}
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
