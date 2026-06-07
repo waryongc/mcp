@@ -86,14 +86,20 @@ jobs:
         working-directory: installer
         run: npm install
 
+      # CSC_LINK을 빈 문자열로 설정하면 electron-builder가 cwd를 인증서 경로로 해석해 오류 발생.
+      # Secret이 있을 때만 GITHUB_ENV에 추가해 env에 아예 존재하지 않게 처리.
+      - name: Set CSC_LINK (only when cert secret exists)
+        if: env.BUILD_CERTIFICATE_BASE64 != ''
+        shell: bash
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        run: echo "CSC_LINK=$RUNNER_TEMP/build_certificate.p12" >> $GITHUB_ENV
+
       - name: Build installer (${{ matrix.platform }})
         working-directory: installer
         run: npm run build:${{ matrix.platform }}
         env:
-          # CSC_LINK: Secret 없으면 설정하지 않음 (파일 없는 경로 지정 시 빌드 실패)
-          CSC_LINK: ${{ secrets.BUILD_CERTIFICATE_BASE64 != '' && format('{0}/build_certificate.p12', runner.temp) || '' }}
           CSC_KEY_PASSWORD: ${{ secrets.P12_PASSWORD }}
-          # Secret 없으면 서명·공증 없이 빌드
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.BUILD_CERTIFICATE_BASE64 != '' && 'true' || 'false' }}
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
