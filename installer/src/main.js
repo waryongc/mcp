@@ -18,7 +18,10 @@ function getClaudeConfigPath() {
 }
 
 function getMcpInstallPath() {
-  return path.join(os.homedir(), '.yeorot-mcp', 'index.mjs')
+  const home = process.platform === 'win32'
+    ? (process.env.USERPROFILE || process.env.HOMEPATH || os.homedir())
+    : os.homedir()
+  return path.normalize(path.join(home, '.yeorot-mcp', 'index.mjs'))
 }
 
 function getBundledMcpPath() {
