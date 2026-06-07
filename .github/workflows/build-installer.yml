@@ -40,8 +40,8 @@ jobs:
       - name: Copy bundle to installer resources
         shell: bash
         run: |
-          mkdir -p installer/resources/mcp
-          cp dist/bundle.mjs installer/resources/mcp/bundle.mjs
+          mkdir -p installer/resources
+          cp dist/bundle.mjs installer/resources/bundle.mjs
 
       # ──────────────────────────────────────────────────────────────
       # macOS: Apple Developer 인증서 import (Secrets 있을 때만 실행)
