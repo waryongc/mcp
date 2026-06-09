@@ -186,3 +186,40 @@ $json = @"
 ```
 
 이후 Claude Desktop 완전 종료 후 재시작.
+
+---
+
+### Bug 6 — MSIX(스토어) 패키지 앱이 config를 다른 경로에서 읽음 (v0.2.7 → v0.2.8)
+
+**증상:** 모든 수정(Bug 4·5) 이후에도 새 Claude Desktop에서 yeorot MCP가 안 붙음. 설정 → 개발자 → "로컬 MCP 서버"가 계속 비어 있음. config를 직접 정상 작성해도 앱이 인식 못 함.
+
+**원인:** 새 Claude Desktop은 **MSIX(Microsoft Store) 패키지 앱**이라 `%APPDATA%`가 **가상화**된다. 앱은 클래식 경로(`%APPDATA%\Claude\claude_desktop_config.json`)가 아니라 다음 경로에서만 config를 읽는다:
+
+```
+%LOCALAPPDATA%\Packages\Claude_<해시>\LocalCache\Roaming\Claude\claude_desktop_config.json
+```
+
+인스톨러는 클래식 경로에만 써서, 패키지 앱은 그 파일을 영영 보지 못했다. 그동안의 "config가 깨졌다/안 읽힌다"는 증상 전부 이 경로 불일치가 근본 원인.
+
+**수정:** `getClaudeConfigPath()`(단수)를 `getClaudeConfigPaths()`(복수)로 바꿔, Windows에서 `%LOCALAPPDATA%\Packages\` 아래 `Claude*` 패키지 폴더를 스캔해 그 `LocalCache\Roaming\Claude\claude_desktop_config.json` 경로들을 모두 포함. 설치 시 클래식 + 패키지 경로 **전부에** config를 써서 어느 앱이든 인식되게 함.
+
+```javascript
+if (process.env.LOCALAPPDATA) {
+  const pkgRoot = path.join(process.env.LOCALAPPDATA, 'Packages')
+  try {
+    for (const name of fs.readdirSync(pkgRoot)) {
+      if (name.startsWith('Claude')) {
+        paths.push(path.join(pkgRoot, name, 'LocalCache', 'Roaming', 'Claude', 'claude_desktop_config.json'))
+      }
+    }
+  } catch { /* Packages 폴더 없음 */ }
+}
+```
+
+**수동 복구:** 패키지 경로에 직접 config 작성 (PowerShell, UTF-8 BOM 없이).
+
+```powershell
+$pkg = Get-ChildItem "$env:LOCALAPPDATA\Packages" -Directory | Where-Object Name -like "Claude*" | Select-Object -First 1
+$cfg = Join-Path $pkg.FullName "LocalCache\Roaming\Claude\claude_desktop_config.json"
+# 이하 Bug 5의 작성 로직과 동일
+```

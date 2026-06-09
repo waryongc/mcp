@@ -7,14 +7,34 @@ const fs = require('fs')
 const os = require('os')
 const { execSync } = require('child_process')
 
-function getClaudeConfigPath() {
+// Claude Desktop config가 있을 수 있는 모든 위치를 반환한다.
+// Windows는 클래식 설치판(%APPDATA%\Claude)과 MSIX(스토어) 패키지 앱이 공존한다.
+// MSIX 앱은 %APPDATA%를 가상화해 %LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude
+// 아래에서만 config를 읽으므로, 클래식 경로에만 쓰면 새 앱이 인식하지 못한다.
+function getClaudeConfigPaths() {
   if (process.platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
-  } else if (process.platform === 'win32') {
-    return path.join(process.env.APPDATA || '', 'Claude', 'claude_desktop_config.json')
-  } else {
-    return path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json')
+    return [path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')]
   }
+  if (process.platform === 'win32') {
+    const paths = []
+    if (process.env.APPDATA) {
+      paths.push(path.join(process.env.APPDATA, 'Claude', 'claude_desktop_config.json'))
+    }
+    if (process.env.LOCALAPPDATA) {
+      const pkgRoot = path.join(process.env.LOCALAPPDATA, 'Packages')
+      try {
+        for (const name of fs.readdirSync(pkgRoot)) {
+          if (name.startsWith('Claude')) {
+            paths.push(path.join(pkgRoot, name, 'LocalCache', 'Roaming', 'Claude', 'claude_desktop_config.json'))
+          }
+        }
+      } catch {
+        // Packages 폴더 없음 — 무시
+      }
+    }
+    return paths
+  }
+  return [path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json')]
 }
 
 function getMcpInstallPath() {
@@ -41,8 +61,7 @@ function checkNodeInstalled() {
 }
 
 function checkClaudeInstalled() {
-  const configPath = getClaudeConfigPath()
-  return fs.existsSync(path.dirname(configPath))
+  return getClaudeConfigPaths().some((p) => fs.existsSync(path.dirname(p)))
 }
 
 function createWindow() {
@@ -77,24 +96,7 @@ ipcMain.handle('install', async (_event, apiKey) => {
     fs.mkdirSync(path.dirname(installPath), { recursive: true })
     fs.copyFileSync(getBundledMcpPath(), installPath)
 
-    const configPath = getClaudeConfigPath()
-    fs.mkdirSync(path.dirname(configPath), { recursive: true })
-
-    let config = {}
-    if (fs.existsSync(configPath)) {
-      try {
-        config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
-      } catch (e) {
-        // 기존 config가 깨져 있으면(과거 한글 경로 인코딩 버그 등) JSON.parse가
-        // 예외를 던져 설치 전체가 중단됐다. 파싱 실패 시 무시하고 새 config로
-        // 덮어써서, 한 번 깨진 파일도 재설치로 자가 복구되게 한다.
-        process.stderr.write(`[installer] 기존 config 파싱 실패 — 새로 작성합니다: ${e.message}\n`)
-        config = {}
-      }
-    }
-
-    config.mcpServers = config.mcpServers ?? {}
-    config.mcpServers.yeorot = {
+    const yeorotEntry = {
       command: 'node',
       args: [installPath],
       env: {
@@ -103,7 +105,35 @@ ipcMain.handle('install', async (_event, apiKey) => {
       },
     }
 
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+    // 클래식 Claude Desktop과 MSIX 패키지 앱은 config 위치가 다르다.
+    // 존재할 수 있는 모든 위치에 동일하게 써서 어느 앱이든 인식되게 한다.
+    let wrote = 0
+    for (const configPath of getClaudeConfigPaths()) {
+      fs.mkdirSync(path.dirname(configPath), { recursive: true })
+
+      let config = {}
+      if (fs.existsSync(configPath)) {
+        try {
+          config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+        } catch (e) {
+          // 기존 config가 깨져 있으면(과거 한글 경로 인코딩 버그 등) JSON.parse가
+          // 예외를 던져 설치 전체가 중단됐다. 파싱 실패 시 무시하고 새 config로
+          // 덮어써서, 한 번 깨진 파일도 재설치로 자가 복구되게 한다.
+          process.stderr.write(`[installer] 기존 config 파싱 실패 — 새로 작성합니다 (${configPath}): ${e.message}\n`)
+          config = {}
+        }
+      }
+
+      config.mcpServers = config.mcpServers ?? {}
+      config.mcpServers.yeorot = yeorotEntry
+
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+      wrote++
+    }
+
+    if (wrote === 0) {
+      return { ok: false, message: 'Claude Desktop 설정 폴더를 찾지 못했습니다.\nClaude Desktop을 한 번 실행한 뒤 다시 시도해 주세요.' }
+    }
 
     return { ok: true }
   } catch (err) {
