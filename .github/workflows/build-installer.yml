@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+# Node.js 20 액션 런타임 deprecation 대응 — 남는 JS 액션까지 Node 24로 강제
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     strategy:
@@ -28,9 +32,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -117,7 +121,7 @@ jobs:
           security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: installer-${{ matrix.platform }}
           path: ${{ matrix.artifact }}
@@ -129,7 +133,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: artifacts
           merge-multiple: true
