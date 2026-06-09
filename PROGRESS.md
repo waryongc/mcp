@@ -23,6 +23,18 @@
 
 ---
 
+## 문서 (README / docs)
+
+### 완료
+
+- [x] 한글 경로 MCP 설치 문제 포스트모템 정리 ([`docs/postmortem-한글경로-mcp-설치.md`](docs/postmortem-한글경로-mcp-설치.md))
+- [x] MCP 아키텍처 섹션 — [공식 문서](https://modelcontextprotocol.io/docs/learn/architecture) 기준으로 보강 (Host·Client·Server, 2계층 구조, 프리미티브, 라이프사이클)
+- [x] 공통 유틸리티 프리미티브(Notifications·Tasks(실험적)) 설명 추가 — 공식 문서 최신본 반영
+- [x] 아키텍처·시퀀스 다이어그램을 PNG/SVG로 렌더링해 `docs/img/`에 저장 + README 본문에 이미지 임베드 (Mermaid 소스는 `<details>`로 보존 — GitHub Mermaid 렌더 실패 대응)
+- [x] 기술 스택 각 항목(`@modelcontextprotocol/sdk`·Zod·dotenv·esbuild) 상세 설명 추가
+
+---
+
 ## 인스톨러 앱 (installer/)
 
 **목표:** 더블클릭 → API 키 입력 → Claude Desktop 자동 설정
