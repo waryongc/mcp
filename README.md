@@ -372,11 +372,29 @@ yeorot 백엔드 API가 이미 있으면 MCP 쪽만 작업하면 됩니다.
 
 ## 기술 스택
 
-| 영역 | 기술 |
-|---|---|
-| 언어 | TypeScript (ESM) |
-| 런타임 | Node.js 18+ |
-| MCP SDK | @modelcontextprotocol/sdk |
-| 입력 검증 | Zod |
-| 환경 변수 | dotenv |
-| 번들러 | esbuild |
+| 영역 | 기술 | 설명 |
+|---|---|---|
+| 언어 | TypeScript (ESM) | 정적 타입 + ES Module 방식 |
+| 런타임 | Node.js 18+ | 서버 실행 환경 |
+| MCP SDK | `@modelcontextprotocol/sdk` | MCP 프로토콜 구현체 — JSON-RPC 처리·도구 등록·stdio 전송을 대신 해줌 |
+| 입력 검증 | Zod | AI가 넘긴 도구 입력값을 런타임에 검증 |
+| 환경 변수 | dotenv | `.env` 파일을 `process.env`로 로드 |
+| 번들러 | esbuild | 소스를 단일 `.mjs`로 묶어 인스톨러에 포함 |
+
+### 각 기술 자세히
+
+#### `@modelcontextprotocol/sdk` — MCP SDK
+
+Anthropic이 공식 제공하는 **MCP 프로토콜 구현 라이브러리**입니다. MCP는 [JSON-RPC 2.0](https://www.jsonrpc.org/) 기반 프로토콜이라, 원래대로면 `initialize` 핸드셰이크, `tools/list`·`tools/call` 메시지 파싱, stdio 메시지 프레이밍 등을 직접 구현해야 합니다. SDK가 이 저수준 작업을 전부 대신해주므로, 우리는 `server.tool(name, description, schema, handler)` 한 줄로 도구를 등록하고 비즈니스 로직(yeorot API 호출)에만 집중하면 됩니다. 이 레포에서는 `src/index.ts`에서 `McpServer`와 `StdioServerTransport`를 사용합니다.
+
+#### Zod — 런타임 입력 검증
+
+TypeScript의 타입은 **컴파일 시점에만** 존재하고 빌드 후엔 사라집니다. 그런데 도구 입력값은 **AI(Claude)가 런타임에 만들어 보내는** 값이라, 타입만으로는 "정말 그 형태로 왔는지" 보장할 수 없습니다. Zod는 스키마를 코드로 정의해 **실행 중에** 입력을 검사하고, 통과하면 타입까지 좁혀줍니다. 예: `날짜는 YYYY-MM-DD 형식`, `진행률은 0~100`. 잘못된 입력은 도구 실행 전에 한국어 에러로 막습니다 (`InputSchema.safeParse(...)` 패턴).
+
+#### dotenv — 환경 변수 로딩
+
+`YEOROT_API_URL`·`YEOROT_API_KEY` 같은 설정값을 **코드에 하드코딩하지 않고** `.env` 파일에 두기 위한 라이브러리입니다. 실행 시 `.env`를 읽어 `process.env`에 채워넣어, 같은 코드로 개발/운영 환경의 다른 값을 쓸 수 있고 API 키를 git에 커밋하지 않을 수 있습니다 (`.env`는 `.gitignore` 대상). 참고로 인스톨러로 설치된 경우엔 Claude Desktop config의 `env` 항목이 값을 직접 주입하므로 `.env` 없이도 동작합니다.
+
+#### esbuild — 번들러
+
+여러 `.ts`·`node_modules` 의존성으로 흩어진 소스를 **하나의 실행 파일(`dist/bundle.mjs`)로 묶어주는** 초고속 번들러입니다. 인스톨러 앱이 이 단일 파일 하나만 `~/.yeorot-mcp/index.mjs`로 복사하면 되도록 만들기 위해 사용합니다 (`npm run bundle`). `node_modules` 폴더를 통째로 배포할 필요가 없어 설치가 가볍고 빨라집니다. 참고로 일반 빌드(`npm run build`)는 번들 없이 `tsc`로 컴파일만 합니다.
