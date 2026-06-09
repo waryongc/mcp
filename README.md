@@ -22,53 +22,109 @@
 
 ## MCP란?
 
-**MCP(Model Context Protocol)** 는 Anthropic이 주도하는 오픈 표준으로, AI 애플리케이션이 외부 도구·데이터 소스와 **JSON-RPC 2.0** 기반으로 표준화된 방식으로 소통할 수 있게 합니다. 플러그인처럼 MCP 서버를 연결하면 AI가 직접 API 호출, DB 조회, 파일 조작 등을 수행할 수 있습니다.
+**MCP(Model Context Protocol)** 는 Anthropic이 주도하는 오픈 표준으로, AI 애플리케이션이 외부 도구·데이터 소스와 **JSON-RPC 2.0** 기반으로 표준화된 방식으로 소통할 수 있게 합니다. USB-C가 기기 연결 규격을 통일하듯, MCP는 "AI ↔ 외부 시스템" 연결 방식을 하나의 프로토콜로 통일합니다. 플러그인처럼 MCP 서버를 연결하면 AI가 직접 API 호출·DB 조회·파일 조작 등을 수행할 수 있습니다.
 
-### 공식 아키텍처: 3계층 구조
+> 이 절은 [MCP 공식 아키텍처 문서](https://modelcontextprotocol.io/docs/learn/architecture)를 기준으로 작성했습니다.
 
+### 참여자: Host · Client · Server
+
+MCP는 클라이언트-서버 구조입니다. **Host**(AI 앱)가 연결할 서버마다 **Client**를 하나씩 만들고, 각 Client는 자신의 **Server**와 **1:1 전용 연결**을 유지합니다. 하나의 Host가 여러 서버에 동시에 붙을 수 있습니다.
+
+```mermaid
+graph TB
+    subgraph Host["🖥️ MCP Host — AI 애플리케이션 (Claude Desktop / Claude Code)"]
+        direction LR
+        C1["MCP Client 1"]
+        C2["MCP Client 2"]
+        C3["MCP Client 3"]
+    end
+
+    S1["📁 MCP Server<br/>Filesystem · 로컬"]
+    S2["⭐ MCP Server<br/><b>yeorot-mcp</b> · 로컬<br/>(이 레포)"]
+    S3["☁️ MCP Server<br/>Sentry · 원격"]
+
+    C1 ---|"1:1 전용 연결 · stdio"| S1
+    C2 ---|"1:1 전용 연결 · stdio"| S2
+    C3 ---|"1:1 전용 연결 · HTTP"| S3
+    S2 -->|"REST API"| Y["🗄️ yeorot 서버"]
 ```
-┌──────────────────────────────────────────────────────┐
-│  MCP Host  (Claude Desktop / Claude Code)            │
-│  ┌────────────────────┐                              │
-│  │   MCP Client       │──── JSON-RPC 2.0 ──────────▶ │  MCP Server
-│  └────────────────────┘                              │  (이 프로젝트)
-└──────────────────────────────────────────────────────┘       │
-                                                               ▼
-                                                     yeorot REST API
-```
 
-| 계층 | 역할 | 이 프로젝트에서 |
+| 참여자 | 역할 | 이 프로젝트에서 |
 |---|---|---|
-| **MCP Host** | 사용자가 직접 쓰는 AI 앱 | Claude Desktop / Claude Code |
-| **MCP Client** | Host 내부의 MCP 프로토콜 처리 | Claude Desktop 내장 클라이언트 |
-| **MCP Server** | 도구·데이터를 노출하는 프로세스 | **이 레포 (yeorot-mcp)** |
+| **MCP Host** | 여러 Client를 조율·관리하는 AI 앱 | Claude Desktop / Claude Code |
+| **MCP Client** | 서버 1개와 전용 연결을 유지하는 컴포넌트 | Host 내부에 서버마다 1개씩 |
+| **MCP Server** | 도구·데이터(컨텍스트)를 제공하는 프로그램 | **이 레포 (yeorot-mcp)** |
 
-### MCP 서버의 3가지 프리미티브
+> 로컬 서버(stdio)는 보통 Client 1개를 상대하고, 원격 서버(HTTP)는 여러 Client를 상대합니다. yeorot-mcp는 Host가 자식 프로세스로 띄우는 **로컬 stdio 서버**입니다.
+
+### 2계층 구조: 데이터 레이어 + 전송 레이어
+
+| 레이어 | 역할 | yeorot-mcp |
+|---|---|---|
+| **데이터 레이어** (안쪽) | JSON-RPC 2.0 기반 프로토콜 — 라이프사이클·프리미티브·알림 정의 | 공통 |
+| **전송 레이어** (바깥쪽) | 실제 통신 채널 — 연결 수립·메시지 프레이밍·인증 | **stdio** (원격 서버는 Streamable HTTP) |
+
+전송 레이어가 통신 방식을 추상화하므로, stdio든 HTTP든 **동일한 JSON-RPC 2.0 메시지**가 오갑니다.
+
+### 동작 방식: 초기화 → 발견 → 실행
+
+Host가 서버를 자식 프로세스로 spawn한 뒤, 아래 순서로 통신합니다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant H as 🖥️ Host (Claude)
+    participant C as MCP Client
+    participant S as ⭐ yeorot-mcp
+    participant Y as 🗄️ yeorot API
+
+    rect rgb(235,243,255)
+    note over C,S: ① 초기화 — 프로토콜 버전·능력(capability) 협상
+    C->>S: initialize
+    S-->>C: 지원 기능 응답 (tools …)
+    C->>S: notifications/initialized
+    end
+
+    rect rgb(235,255,243)
+    note over C,S: ② 도구 발견
+    C->>S: tools/list
+    S-->>C: Tool 목록 (name · description · inputSchema)
+    end
+
+    rect rgb(255,247,235)
+    note over H,Y: ③ 대화 중 도구 실행
+    H->>C: "오늘 내 태스크 보여줘"
+    C->>S: tools/call · getTodayTasks
+    S->>Y: GET /tasks?date=…
+    Y-->>S: JSON 결과
+    S-->>C: tool 결과 (content)
+    C-->>H: LLM이 결과로 답변 생성
+    end
+```
+
+서버의 도구 목록이 바뀌면 서버가 `notifications/tools/list_changed` 알림을 보내고, Client는 `tools/list`로 목록을 새로 받습니다(실시간 동기화).
+
+### 프리미티브 — 서버와 클라이언트가 서로 제공하는 것
+
+**서버가 노출하는** 3가지:
 
 | 프리미티브 | 설명 | yeorot-mcp |
 |---|---|---|
-| **Tools** | AI가 호출하는 함수 | ✅ 사용 (7개 Tool 등록) |
-| **Resources** | AI가 읽는 정적 데이터·컨텍스트 | — 미사용 |
-| **Prompts** | 재사용 가능한 프롬프트 템플릿 | — 미사용 |
+| **Tools** | AI가 호출하는 실행 함수 (API·DB·파일 조작) | ✅ 사용 (7개 Tool 등록) |
+| **Resources** | AI가 읽는 컨텍스트 데이터 (파일·DB 레코드 등) | — 미사용 |
+| **Prompts** | 재사용 가능한 프롬프트 템플릿 (시스템 프롬프트·few-shot 등) | — 미사용 |
 
-이 서버는 **Tools** 프리미티브만 사용합니다. Claude가 대화 중 필요하다고 판단하면 MCP Client를 통해 Tool을 호출하고, 서버가 yeorot API를 실행한 뒤 결과를 반환합니다.
+**클라이언트가 노출하는** 것(서버가 더 풍부한 상호작용을 만들 때 사용): **Sampling**(서버가 Host의 LLM에 완성을 요청 — 서버가 모델 SDK 없이도 LLM 사용), **Elicitation**(서버가 사용자에게 추가 입력·확인 요청), **Logging**(서버가 디버그 로그 전송).
 
-### 전송 방식: Stdio
+이 서버는 **Tools만** 사용합니다. Claude가 대화 중 필요하다고 판단하면 `tools/call`로 호출하고, 서버가 yeorot REST API를 실행한 뒤 결과를 반환합니다.
 
-이 서버는 **stdio 전송**을 사용합니다. MCP Host가 이 프로세스를 자식 프로세스로 spawn하고, 표준 입출력으로 JSON-RPC 메시지를 주고받습니다.
+### 전송: Stdio
 
-```
-MCP Host (Claude Desktop / Claude Code)
-    │  spawn
-    ▼
-MCP Server: yeorot-mcp (이 프로세스)
-    │  stdin  ◀──  JSON-RPC 요청 수신 (tool 호출)
-    │  stdout ──▶  JSON-RPC 응답 송신 (tool 결과)
-    │  stderr ──▶  로그 출력 (디버깅용, AI 응답에 노출 안 됨)
-    │
-    ▼
-yeorot REST API
-```
+yeorot-mcp는 **로컬 stdio 서버**입니다. MCP Host가 이 프로세스를 자식 프로세스로 spawn하고, 표준 입출력으로 JSON-RPC 메시지를 주고받습니다.
+
+- `stdin`  ◀── JSON-RPC 요청 수신 (`initialize` / `tools/list` / `tools/call`)
+- `stdout` ──▶ JSON-RPC 응답 송신 (tool 결과)
+- `stderr` ──▶ 로그 출력 (디버깅용 — **AI 응답에 노출되지 않음.** 그래서 API 키·내부 URL·에러는 stderr로만 출력)
 
 ---
 
@@ -158,6 +214,8 @@ npm run build && npm start
 - [Claude Desktop](https://claude.ai/download) 설치
 - yeorot API 키 발급 (`yrk_` 로 시작)
 
+> **참고:** 더블클릭만으로 끝나는 [인스톨러 앱](#인스톨러-앱)을 쓰면 아래 수동 설정은 필요 없습니다.
+
 ### 1단계: 레포 클론 & 빌드
 
 ```bash
@@ -196,6 +254,11 @@ open ~/Library/Application\ Support/Claude/
 
 `claude_desktop_config.json`을 텍스트 편집기로 엽니다.
 
+> **새 Claude Desktop(스토어/MSIX 버전) 사용 시:** `%APPDATA%`가 가상화되어 위 클래식 경로 대신
+> `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude\claude_desktop_config.json` 에서 config를 읽습니다.
+> 설정 → 개발자 → "로컬 MCP 서버" → **구성 편집** 버튼을 누르면 앱이 실제로 읽는 파일이 바로 열립니다.
+> 자세한 배경은 [docs/postmortem-한글경로-mcp-설치.md](docs/postmortem-한글경로-mcp-설치.md) 참고.
+
 ### 4단계: 설정 추가
 
 > **파일에 기존 내용이 있는 경우:** 기존 내용을 지우지 말고 `"mcpServers"` 키만 추가합니다.
@@ -223,15 +286,15 @@ Windows 경로는 역슬래시를 두 개(`\\`)로 작성합니다:
 
 ### 5단계: Claude Desktop 재시작
 
-설정 파일 저장 후 Claude Desktop을 완전히 종료하고 다시 시작합니다.
-채팅창 좌측 하단에 `yeorot` 도구가 표시되면 연결 성공입니다.
+설정 파일 저장 후 Claude Desktop을 완전히 종료(트레이 → Quit)하고 다시 시작합니다.
+Chat 탭에서 `yeorot` 도구가 표시되면 연결 성공입니다. (Code 탭은 이 config를 읽지 않으므로 별도 등록 필요)
 
 ---
 
 ## 인스톨러 앱
 
 더블클릭 한 번으로 설치를 완료하는 **Electron GUI 설치 프로그램**입니다.
-API 키만 입력하면 MCP 서버 파일 복사 + Claude Desktop 설정까지 자동으로 처리합니다.
+API 키만 입력하면 MCP 서버 파일 복사 + Claude Desktop 설정까지 자동으로 처리합니다. 클래식·MSIX 패키지 앱의 config 경로를 모두 자동으로 찾아 씁니다.
 
 ### 다운로드
 
@@ -297,5 +360,3 @@ yeorot 백엔드 API가 이미 있으면 MCP 쪽만 작업하면 됩니다.
 | 입력 검증 | Zod |
 | 환경 변수 | dotenv |
 | 번들러 | esbuild |
-| 인스톨러 | Electron + electron-builder |
-| CI/CD | GitHub Actions |
