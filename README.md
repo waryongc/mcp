@@ -30,6 +30,13 @@
 
 MCP는 클라이언트-서버 구조입니다. **Host**(AI 앱)가 연결할 서버마다 **Client**를 하나씩 만들고, 각 Client는 자신의 **Server**와 **1:1 전용 연결**을 유지합니다. 하나의 Host가 여러 서버에 동시에 붙을 수 있습니다.
 
+<p align="center">
+  <img src="docs/img/mcp-architecture.png" alt="MCP Host·Client·Server 아키텍처 다이어그램 — 하나의 Host가 서버마다 Client를 두고 1:1 전용 연결을 유지한다" width="760">
+</p>
+
+<details>
+<summary>다이어그램 소스 (Mermaid · GitHub에서 직접 렌더링)</summary>
+
 ```mermaid
 graph TB
     subgraph Host["🖥️ MCP Host — AI 애플리케이션 (Claude Desktop / Claude Code)"]
@@ -48,6 +55,8 @@ graph TB
     C3 ---|"1:1 전용 연결 · HTTP"| S3
     S2 -->|"REST API"| Y["🗄️ yeorot 서버"]
 ```
+
+</details>
 
 | 참여자 | 역할 | 이 프로젝트에서 |
 |---|---|---|
@@ -69,6 +78,13 @@ graph TB
 ### 동작 방식: 초기화 → 발견 → 실행
 
 Host가 서버를 자식 프로세스로 spawn한 뒤, 아래 순서로 통신합니다.
+
+<p align="center">
+  <img src="docs/img/mcp-sequence.png" alt="MCP 동작 시퀀스 다이어그램 — 초기화·도구 발견·도구 실행 3단계" width="820">
+</p>
+
+<details>
+<summary>다이어그램 소스 (Mermaid · GitHub에서 직접 렌더링)</summary>
 
 ```mermaid
 sequenceDiagram
@@ -102,6 +118,8 @@ sequenceDiagram
     end
 ```
 
+</details>
+
 서버의 도구 목록이 바뀌면 서버가 `notifications/tools/list_changed` 알림을 보내고, Client는 `tools/list`로 목록을 새로 받습니다(실시간 동기화).
 
 ### 프리미티브 — 서버와 클라이언트가 서로 제공하는 것
@@ -115,6 +133,8 @@ sequenceDiagram
 | **Prompts** | 재사용 가능한 프롬프트 템플릿 (시스템 프롬프트·few-shot 등) | — 미사용 |
 
 **클라이언트가 노출하는** 것(서버가 더 풍부한 상호작용을 만들 때 사용): **Sampling**(서버가 Host의 LLM에 완성을 요청 — 서버가 모델 SDK 없이도 LLM 사용), **Elicitation**(서버가 사용자에게 추가 입력·확인 요청), **Logging**(서버가 디버그 로그 전송).
+
+이 둘과 별개로, 요청 실행 방식을 보강하는 **공통 유틸리티 프리미티브**도 있습니다: **Notifications**(실시간 업데이트 — 예: `tools/list_changed`)와 **Tasks**(실험적 — 오래 걸리는 요청을 내구성 있게 실행하고 나중에 결과·상태를 조회).
 
 이 서버는 **Tools만** 사용합니다. Claude가 대화 중 필요하다고 판단하면 `tools/call`로 호출하고, 서버가 yeorot REST API를 실행한 뒤 결과를 반환합니다.
 

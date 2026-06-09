@@ -1,0 +1,24 @@
+graph TB
+    subgraph Host["MCP Host - AI Application (Claude Desktop / Claude Code)"]
+        direction LR
+        C1["MCP Client 1"]
+        C2["MCP Client 2"]
+        C3["MCP Client 3"]
+    end
+
+    S1["MCP Server<br/>Filesystem - local"]
+    S2["MCP Server<br/><b>yeorot-mcp</b> - local<br/>(this repo)"]
+    S3["MCP Server<br/>Sentry - remote"]
+
+    C1 ---|"dedicated connection - stdio"| S1
+    C2 ---|"dedicated connection - stdio"| S2
+    C3 ---|"dedicated connection - HTTP"| S3
+    S2 -->|"REST API"| Y["yeorot server"]
+
+    classDef host fill:#eef3ff,stroke:#4169e1,stroke-width:1px;
+    classDef star fill:#fff7eb,stroke:#e08a00,stroke-width:2px;
+    classDef srv fill:#f5f5f5,stroke:#888,stroke-width:1px;
+    classDef ext fill:#ecfff3,stroke:#2b9e5a,stroke-width:1px;
+    class S1,S3 srv;
+    class S2 star;
+    class Y ext;

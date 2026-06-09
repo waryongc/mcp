@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    participant H as Host (Claude)
+    participant C as MCP Client
+    participant S as yeorot-mcp
+    participant Y as yeorot API
+
+    rect rgb(235,243,255)
+    note over C,S: 1. Initialization - protocol & capability negotiation
+    C->>S: initialize
+    S-->>C: supported capabilities (tools ...)
+    C->>S: notifications/initialized
+    end
+
+    rect rgb(235,255,243)
+    note over C,S: 2. Tool discovery
+    C->>S: tools/list
+    S-->>C: tool list (name - description - inputSchema)
+    end
+
+    rect rgb(255,247,235)
+    note over H,Y: 3. Tool execution during conversation
+    H->>C: "show my tasks today"
+    C->>S: tools/call - getTodayTasks
+    S->>Y: GET /tasks?date=...
+    Y-->>S: JSON result
+    S-->>C: tool result (content)
+    C-->>H: LLM generates answer from result
+    end
