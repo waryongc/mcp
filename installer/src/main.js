@@ -82,7 +82,15 @@ ipcMain.handle('install', async (_event, apiKey) => {
 
     let config = {}
     if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+      try {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+      } catch (e) {
+        // 기존 config가 깨져 있으면(과거 한글 경로 인코딩 버그 등) JSON.parse가
+        // 예외를 던져 설치 전체가 중단됐다. 파싱 실패 시 무시하고 새 config로
+        // 덮어써서, 한 번 깨진 파일도 재설치로 자가 복구되게 한다.
+        process.stderr.write(`[installer] 기존 config 파싱 실패 — 새로 작성합니다: ${e.message}\n`)
+        config = {}
+      }
     }
 
     config.mcpServers = config.mcpServers ?? {}

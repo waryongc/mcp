@@ -140,3 +140,49 @@ $c | ConvertTo-Json -Depth 10 | Set-Content $cfg -Encoding UTF8
 ```
 
 이후 시스템 트레이에서 Claude Desktop 완전 종료 후 재시작.
+
+---
+
+### Bug 5 — 깨진 config가 재설치로 자가 복구 안 됨 (v0.2.6 → v0.2.7)
+
+**증상:** Bug 4 수정(v0.2.6) 이후에도 한글 username PC에서 MCP가 안 붙음. 새 Claude Desktop 설정 → 개발자 → "로컬 MCP 서버"에 "추가된 서버가 없습니다"로 뜨고, `%APPDATA%\Claude\logs\` 폴더조차 생성 안 됨. 디스크의 `claude_desktop_config.json`을 직접 확인하니 `args` 경로가 `C:\\Users\\諛뺤쥌??\.yeorot-mcp\\index.mjs`로 깨져 있음 — 한글 mojibake + `\.` 잘못된 이스케이프 시퀀스. 앱이 JSON 파싱 실패로 config 전체를 조용히 무시.
+
+**원인:** 설치 시 기존 config를 병합하려고 `JSON.parse(fs.readFileSync(configPath))`를 호출하는데, **기존 파일이 이미 깨져 있으면 여기서 예외가 터져 설치 전체가 catch로 빠짐**. 결과적으로 한 번 깨진 config는 재설치로도 절대 덮어써지지 않아 자가 복구가 불가능했음.
+
+**수정:** 기존 config 읽기/파싱을 `try-catch`로 감싸 파싱 실패 시 빈 객체로 새로 시작하도록 변경. 깨진 파일도 재설치하면 정상 config로 덮어써짐.
+
+```javascript
+let config = {}
+if (fs.existsSync(configPath)) {
+  try {
+    config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+  } catch (e) {
+    process.stderr.write(`[installer] 기존 config 파싱 실패 — 새로 작성합니다: ${e.message}\n`)
+    config = {}
+  }
+}
+```
+
+**수동 복구 (재설치 전 임시 조치):** PowerShell에서 `$env:USERPROFILE`로 경로를 만들고 UTF-8(BOM 없이)로 config를 새로 작성.
+
+```powershell
+$cfg = "$env:APPDATA\Claude\claude_desktop_config.json"
+$mjs = "$env:USERPROFILE\.yeorot-mcp\index.mjs"
+$json = @"
+{
+  "mcpServers": {
+    "yeorot": {
+      "command": "node",
+      "args": ["$($mjs.Replace('\','\\'))"],
+      "env": {
+        "YEOROT_API_URL": "https://yeorot.cloud/api/v1",
+        "YEOROT_API_KEY": "<발급받은 키>"
+      }
+    }
+  }
+}
+"@
+[System.IO.File]::WriteAllText($cfg, $json, (New-Object System.Text.UTF8Encoding($false)))
+```
+
+이후 Claude Desktop 완전 종료 후 재시작.
