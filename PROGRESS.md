@@ -35,6 +35,37 @@
 
 ---
 
+## 원격(웹) MCP 서버 전환
+
+**목표:** 로컬 stdio 서버를 웹에 띄워 여러 사용자가 원격 접속 (GitHub·Linear 등의 Remote MCP Server 형태)
+
+전체 설계: [`docs/remote-server-plan.md`](docs/remote-server-plan.md)
+
+**핵심 과제:** 전송 방식 교체(`StdioServerTransport` → `StreamableHTTPServerTransport`)보다 **멀티테넌트 인증**이 진짜 난이도. 현재 전역 단일 `YEOROT_API_KEY`를, 요청을 보낸 사용자별 키로 분리해 `yeorotFetch`까지 전달해야 함 (AsyncLocalStorage 채택 예정).
+
+### Phase 0 — 리팩토링 (동작 변화 없음)
+- [ ] `auth-context.ts` (AsyncLocalStorage) 추가
+- [ ] `client.ts`를 request-scoped 키 조회로 변경
+- [ ] tool 등록을 `registerTools(server)`로 추출 (stdio·http 공유)
+- [ ] `config.ts`에서 `YEOROT_API_KEY` 선택값化
+
+### Phase 1 — Streamable HTTP + Bearer 키 (MVP)
+- [ ] `server-http.ts` (Express + StreamableHTTPServerTransport, `/mcp`·`/healthz`)
+- [ ] `Authorization: Bearer yrk_...` 헤더 → 요청별 키
+- [ ] CORS·DNS rebinding 보호, Dockerfile + TLS 배포
+- [ ] Claude 커스텀 커넥터로 연결 검증
+
+### Phase 2 — OAuth 2.1 (원클릭 연결 UX)
+- [ ] yeorot OAuth 인가 서버 + MCP 리소스 서버 (`server/auth/`, RFC 9728 PRM)
+
+### Phase 3 — 하드닝 & 확장
+- [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성
+
+### 미결정
+- 호스팅 대상(yeorot.cloud VM vs PaaS), Phase 2 OAuth 범위(yeorot 백엔드 작업 수반), 세션 모드
+
+---
+
 ## 인스톨러 앱 (installer/)
 
 **목표:** 더블클릭 → API 키 입력 → Claude Desktop 자동 설정
