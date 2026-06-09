@@ -146,6 +146,8 @@ yeorot-mcp는 **로컬 stdio 서버**입니다. MCP Host가 이 프로세스를 
 - `stdout` ──▶ JSON-RPC 응답 송신 (tool 결과)
 - `stderr` ──▶ 로그 출력 (디버깅용 — **AI 응답에 노출되지 않음.** 그래서 API 키·내부 URL·에러는 stderr로만 출력)
 
+> 📋 **원격(웹) 서버 전환 계획:** 이 로컬 stdio 서버를 웹에 띄워 여러 사용자가 원격 접속(Streamable HTTP)하는 형태로 확장하는 설계는 [docs/remote-server-plan.md](docs/remote-server-plan.md)를 참고하세요. (아직 미착수 — 계획 단계)
+
 ---
 
 ## 등록된 Tool 목록
