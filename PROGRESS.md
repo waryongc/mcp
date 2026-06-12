@@ -61,7 +61,11 @@
 - [x] (운영 개선) nginx 설정을 디렉터리 마운트로 전환 — 단일 파일 마운트의 inode 교체 문제 해소, 이제 `nginx -s reload`만으로 설정 반영
 
 ### Phase 2 — OAuth 2.1 (원클릭 연결 UX)
-- [ ] yeorot OAuth 인가 서버 + MCP 리소스 서버 (`server/auth/`, RFC 9728 PRM)
+- [x] Phase 2 설계 + MCP 리소스 서버 구현 — 기존 SSO(onl1d)를 인가 서버로 재활용, RFC 9728 PRM + WWW-Authenticate + OAuth 토큰 패스스루 (상세: [`docs/remote-server-plan.md`](docs/remote-server-plan.md) Phase 2)
+- [ ] onl1d: DCR(RFC 7591) + public client + resource indicator(RFC 8707) — 운영 SSO라 별도 세션에서 신중히
+- [ ] yeorot backend: `verifyOidcToken` audience 목록 검증 (1곳 수정)
+- [ ] MCP 컨테이너 재배포 (env 2개 추가됨 — svc compose에 반영 완료, 배포만 보류)
+- [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성

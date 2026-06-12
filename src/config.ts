@@ -17,6 +17,11 @@ const ConfigSchema = z.object({
   // DNS rebinding 보호용 허용 Host/Origin 목록 (콤마 구분). 미설정 시 localhost만 허용
   MCP_ALLOWED_HOSTS: z.string().optional(),
   MCP_ALLOWED_ORIGINS: z.string().optional(),
+  // --- OAuth (Phase 2) — 둘 다 설정해야 RFC 9728 PRM 디스커버리 활성화 ---
+  // 이 MCP 서버의 공개 리소스 URI (예: https://mcp.yeorot.cloud/mcp)
+  MCP_RESOURCE_URL: z.string().url().optional(),
+  // OAuth 인가 서버(onl1d) issuer URL (예: https://yeorot.cloud:44000)
+  MCP_AUTH_SERVER_URL: z.string().url().optional(),
 });
 
 const parsed = ConfigSchema.safeParse(process.env);

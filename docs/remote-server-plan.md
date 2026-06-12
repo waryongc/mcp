@@ -133,8 +133,25 @@ HTTPS /mcp  <────┤   각자 자기 yeorot 키  ├──> yeorot-mcp (
 - [ ] Claude 커스텀 커넥터로 연결 검증 (사용자 본인 키로 테스트)
 
 ### Phase 2 — OAuth 2.1 (대기업 커넥터 수준 UX)
-- [ ] yeorot OAuth 인가 서버 (authorize/token, DCR)
-- [ ] MCP 서버를 OAuth 리소스 서버로 (`server/auth/` 라우터 + bearer 검증, RFC 9728 PRM)
+
+**설계 확정 (2026-06-12 조사 결과):**
+
+OAuth 인가 서버를 새로 만들 필요 없음 — **기존 SSO 서버 onl1d**(`/home/xiilab/dev/onl1d`, `https://yeorot.cloud:44000`)가 이미 OIDC 인가 서버다 (authorize/token/jwks/introspect, PKCE S256, refresh token). 게다가 **yeorot 백엔드 `authenticate.ts`가 이미 OIDC Bearer 토큰을 수용**한다 (`yrk_` 아니면 onl1d 토큰으로 검증). 따라서 MCP 서버는 Claude의 OAuth 토큰을 yeorot API로 패스스루하면 된다.
+
+단, 세 군데 보완 필요:
+
+| 레포 | 작업 | 이유 |
+|---|---|---|
+| **onl1d** | ① DCR(RFC 7591) `/register` 엔드포인트 + discovery에 `registration_endpoint` ② public client 지원 (`token_endpoint_auth_method: none` — 현재 Client 모델이 secretHash 필수) ③ RFC 8707 `resource` 파라미터 → 토큰 `aud`에 반영 | Claude는 DCR로 자신을 public client로 등록하고, MCP 스펙에 따라 `resource` 파라미터를 보냄 |
+| **yeorot backend** | `verifyOidcToken`의 audience 검증을 단일값(`OIDC_CLIENT_ID`)에서 **목록**(웹 client_id + `https://mcp.yeorot.cloud/mcp`)으로 확장 | 현재 aud가 웹앱 client_id로 고정되어 Claude 클라이언트의 토큰이 거부됨 |
+| **yeorot-mcp (이 레포)** | ① RFC 9728 PRM: `GET /.well-known/oauth-protected-resource` (authorization_servers에 onl1d 지정) ② 401 응답에 `WWW-Authenticate: Bearer resource_metadata="..."` ③ Bearer 추출 시 `yrk_` 외 토큰도 수용해 패스스루 | Claude의 OAuth 디스커버리 진입점 + 토큰 전달 |
+
+알려진 한계(MVP 수용): 세션이 토큰 문자열에 바인딩되므로 access token 갱신 시 기존 세션은 401 → 클라이언트가 재초기화함.
+
+- [x] 설계 확정 — onl1d 재활용 + resource indicator 방식 (위 표)
+- [x] yeorot-mcp: PRM 엔드포인트(`/.well-known/oauth-protected-resource` + `/mcp` 변형, `MCP_RESOURCE_URL`·`MCP_AUTH_SERVER_URL` env로 활성화) + 401 `WWW-Authenticate`에 resource_metadata + `yrk_` 외 Bearer 토큰 패스스루 — 구현·로컬 검증 완료, **운영 재배포는 보류** (onl1d 작업 후 일괄)
+- [ ] onl1d: DCR + public client + resource indicator (운영 SSO라 별도 세션에서 신중히 — 자체 테스트 스위트 필수 통과)
+- [ ] yeorot backend: audience 목록 검증
 - [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증
 
 ### Phase 3 — 하드닝 & 확장

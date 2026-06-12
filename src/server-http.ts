@@ -29,17 +29,32 @@ const allowedOrigins = config.MCP_ALLOWED_ORIGINS
 const transports = new Map<string, StreamableHTTPServerTransport>();
 const sessionKeys = new Map<string, string>();
 
-function extractApiKey(req: express.Request): string | null {
+// yrk_ API 키 또는 onl1d OAuth 토큰 — 둘 다 yeorot 백엔드가 검증하므로 그대로 패스스루
+function extractBearerToken(req: express.Request): string | null {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) return null;
-  const key = header.slice('Bearer '.length).trim();
-  return key.startsWith('yrk_') ? key : null;
+  const token = header.slice('Bearer '.length).trim();
+  return token.length > 0 ? token : null;
 }
 
+// RFC 9728 Protected Resource Metadata — Claude의 OAuth 디스커버리 진입점
+const prmDocument =
+  config.MCP_RESOURCE_URL && config.MCP_AUTH_SERVER_URL
+    ? {
+        resource: config.MCP_RESOURCE_URL,
+        authorization_servers: [config.MCP_AUTH_SERVER_URL],
+        bearer_methods_supported: ['header'],
+        scopes_supported: ['openid', 'profile', 'email'],
+      }
+    : null;
+
 function unauthorized(res: express.Response, message: string): void {
+  const challenge = prmDocument
+    ? `Bearer realm="yeorot-mcp", resource_metadata="${new URL(config.MCP_RESOURCE_URL!).origin}/.well-known/oauth-protected-resource"`
+    : 'Bearer realm="yeorot-mcp"';
   res
     .status(401)
-    .set('WWW-Authenticate', 'Bearer realm="yeorot-mcp"')
+    .set('WWW-Authenticate', challenge)
     .json({
       jsonrpc: '2.0',
       error: { code: -32001, message },
@@ -55,11 +70,21 @@ app.get('/healthz', (_req, res) => {
   res.json({ status: 'ok', version: VERSION });
 });
 
+if (prmDocument) {
+  // 루트 + 경로 변형(RFC 9728 §3: resource가 /mcp 경로를 가지면 이 경로로 조회하는 클라이언트도 있음)
+  app.get('/.well-known/oauth-protected-resource', (_req, res) => {
+    res.json(prmDocument);
+  });
+  app.get('/.well-known/oauth-protected-resource/mcp', (_req, res) => {
+    res.json(prmDocument);
+  });
+}
+
 app.post('/mcp', (req, res) => {
   void (async () => {
-    const apiKey = extractApiKey(req);
+    const apiKey = extractBearerToken(req);
     if (!apiKey) {
-      unauthorized(res, '인증이 필요합니다 — Authorization: Bearer yrk_... 헤더를 보내세요');
+      unauthorized(res, '인증이 필요합니다 — Authorization: Bearer 헤더(yeorot API 키 또는 OAuth 토큰)를 보내세요');
       return;
     }
 
@@ -119,9 +144,9 @@ app.post('/mcp', (req, res) => {
 // GET(SSE 스트림) / DELETE(세션 종료) — 기존 세션 필수
 function handleSessionRequest(req: express.Request, res: express.Response): void {
   void (async () => {
-    const apiKey = extractApiKey(req);
+    const apiKey = extractBearerToken(req);
     if (!apiKey) {
-      unauthorized(res, '인증이 필요합니다 — Authorization: Bearer yrk_... 헤더를 보내세요');
+      unauthorized(res, '인증이 필요합니다 — Authorization: Bearer 헤더(yeorot API 키 또는 OAuth 토큰)를 보내세요');
       return;
     }
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
