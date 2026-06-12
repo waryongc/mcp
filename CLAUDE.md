@@ -93,9 +93,18 @@ yeorot 백엔드 API가 이미 있으면 MCP 쪽만 작업하면 됨 — yeorot 
   - `fix: [수정내용]`
   - `docs: [문서]`
   - `refactor: [리팩토링 내용]`
-- commit 전 반드시 `npm run build` 통과 확인
-- 빌드 실패 시 commit 금지
+- commit 전 반드시 `npm run build` 통과 확인 (빌드 실패 시 commit 금지)
 - 커밋 후 반드시 push: `git push origin main`
+
+### Stop hook 자동화 (.claude/hooks/on-progress-done.sh)
+
+`PROGRESS.md`에 새 `- [x]` 완료 행이 추가된 채 턴이 끝나면 Stop hook이 자동으로
+**`npm run build` → `git commit` → `git push`** 를 수행한다 (yeorot 본체와 동일한 워크플로우).
+
+- 빌드 실패 시 커밋하지 않고 경고만 표시 (로그: `/tmp/yeorot-mcp-autopush.log`)
+- 커밋 메시지: `feat: [작업명] 완료` — 작업명은 `- [x]` 행의 em-dash(` — `) 이전 텍스트
+- 따라서 **작업 완료 시 PROGRESS.md에 `- [x]` 행만 추가하면 빌드 검증·커밋·푸시는 hook이 처리** —
+  단, hook을 신뢰하지 말고 커밋 누락 여부는 확인할 것. PROGRESS.md를 건드리지 않는 변경은 기존처럼 수동 커밋.
 
 ---
 
@@ -166,5 +175,4 @@ Secrets 등록 위치: GitHub → Settings → Secrets and variables → Actions
 - 작업 전 `CLAUDE.md`, `README.md`, `PROGRESS.md`를 먼저 읽는다.
 - Tool 추가 시 `index.ts`의 `ok()` / `fail()` 패턴을 반드시 준수한다.
 - secret, token, API key는 코드/로그/AI 응답에 노출하지 않는다.
-- commit 전 `npm run build` 를 반드시 통과해야 한다.
-- 작업 완료 후 `PROGRESS.md` 업데이트.
+- 작업 완료 후 `PROGRESS.md` 업데이트 — 새 `- [x]` 행이 추가되면 Stop hook이 빌드·커밋·푸시를 자동 수행한다 (위 "Git 규칙 > Stop hook 자동화" 참고).

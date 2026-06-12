@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/xiilab/dev/mcp/.claude/hooks/on-progress-done.sh",
+            "timeout": 300,
+            "statusMessage": "PROGRESS 완료 확인 → 자동 빌드/커밋/푸시"
+          }
+        ]
+      }
+    ]
+  }
+}
