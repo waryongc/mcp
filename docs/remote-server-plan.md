@@ -117,12 +117,12 @@ HTTPS /mcp  <────┤   각자 자기 yeorot 키  ├──> yeorot-mcp (
 
 ## 8. 단계별 로드맵
 
-### Phase 0 — 리팩토링 (동작 변화 없음)
-- [ ] `auth-context.ts` (AsyncLocalStorage) 추가
-- [ ] `client.ts`를 request-scoped 키 조회로 변경 (stdio는 env 키를 store에 한 번 넣어 호환)
-- [ ] tool 등록을 `registerTools(server)`로 추출
-- [ ] `config.ts`에서 `YEOROT_API_KEY` 선택값化
-- [ ] 기존 stdio 동작·인스톨러 회귀 테스트
+### Phase 0 — 리팩토링 (동작 변화 없음) ✅ 완료
+- [x] `auth-context.ts` (AsyncLocalStorage) 추가
+- [x] `client.ts`를 request-scoped 키 조회로 변경 (stdio는 env 키를 fallback으로 한 번 등록해 호환 — 이벤트 콜백에서 ALS 컨텍스트가 끊기는 문제 회피)
+- [x] tool 등록을 `registerTools(server)`로 추출
+- [x] `config.ts`에서 `YEOROT_API_KEY` 선택값化 (stdio 엔트리에서 필수 검증 유지)
+- [x] 기존 stdio 동작 회귀 테스트 (키 가드·tools/list·tools/call·번들 빌드)
 
 ### Phase 1 — Streamable HTTP + Bearer 키 (MVP, "모두 접속 가능")
 - [ ] `server-http.ts` (Express + StreamableHTTPServerTransport)

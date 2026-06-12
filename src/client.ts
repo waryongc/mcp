@@ -1,4 +1,5 @@
 import { config } from './config.js';
+import { getApiKey } from './auth-context.js';
 
 interface FetchOptions {
   method?: string;
@@ -10,6 +11,11 @@ interface ErrorBody {
 }
 
 export async function yeorotFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error('인증이 필요합니다 — API 키를 확인하세요');
+  }
+
   const url = `${config.YEOROT_API_URL}${path}`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.YEOROT_TIMEOUT_MS);
@@ -19,7 +25,7 @@ export async function yeorotFetch<T>(path: string, options: FetchOptions = {}): 
     response = await fetch(url, {
       method: options.method ?? 'GET',
       headers: {
-        'Authorization': `Bearer ${config.YEOROT_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       },
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,

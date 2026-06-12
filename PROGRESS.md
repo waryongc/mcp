@@ -43,11 +43,13 @@
 
 **핵심 과제:** 전송 방식 교체(`StdioServerTransport` → `StreamableHTTPServerTransport`)보다 **멀티테넌트 인증**이 진짜 난이도. 현재 전역 단일 `YEOROT_API_KEY`를, 요청을 보낸 사용자별 키로 분리해 `yeorotFetch`까지 전달해야 함 (AsyncLocalStorage 채택 예정).
 
-### Phase 0 — 리팩토링 (동작 변화 없음)
-- [ ] `auth-context.ts` (AsyncLocalStorage) 추가
-- [ ] `client.ts`를 request-scoped 키 조회로 변경
-- [ ] tool 등록을 `registerTools(server)`로 추출 (stdio·http 공유)
-- [ ] `config.ts`에서 `YEOROT_API_KEY` 선택값化
+### Phase 0 — 리팩토링 (동작 변화 없음) ✅
+- [x] Phase 0 리팩토링 — AsyncLocalStorage 인증 컨텍스트 도입 (auth-context·client·registerTools·config)
+- [x] `auth-context.ts` (AsyncLocalStorage) 추가 — `runWithApiKey`(요청 스코프) + `setFallbackApiKey`(stdio 호환)
+- [x] `client.ts`를 request-scoped 키 조회로 변경 — 키 없으면 401 의미의 에러
+- [x] tool 등록을 `registerTools(server)`로 추출 (stdio·http 공유)
+- [x] `config.ts`에서 `YEOROT_API_KEY` 선택값化 — stdio 엔트리(`index.ts`)에서 필수 검증 유지
+- [x] 기존 stdio 동작 회귀 테스트 — 키 누락/잘못된 접두사 거부, tools/list 7개, tools/call fallback 키 경로, 번들 빌드 확인
 
 ### Phase 1 — Streamable HTTP + Bearer 키 (MVP)
 - [ ] `server-http.ts` (Express + StreamableHTTPServerTransport, `/mcp`·`/healthz`)
