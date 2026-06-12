@@ -62,10 +62,9 @@
 
 ### Phase 2 — OAuth 2.1 (원클릭 연결 UX)
 - [x] Phase 2 설계 + MCP 리소스 서버 구현 — 기존 SSO(onl1d)를 인가 서버로 재활용, RFC 9728 PRM + WWW-Authenticate + OAuth 토큰 패스스루 (상세: [`docs/remote-server-plan.md`](docs/remote-server-plan.md) Phase 2)
-- [ ] onl1d: DCR(RFC 7591) + public client + resource indicator(RFC 8707) — 운영 SSO라 별도 세션에서 신중히
-- [ ] yeorot backend: `verifyOidcToken` audience 목록 검증 (1곳 수정)
-- [ ] MCP 컨테이너 재배포 (env 2개 추가됨 — svc compose에 반영 완료, 배포만 보류)
-- [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증
+- [x] Phase 2 운영 배포 + 서버 측 E2E 검증 — onl1d(DCR·public client·resource indicator, 테스트 67/67)와 MCP 컨테이너(PRM 포함) 재배포, svc compose에 `ALLOWED_RESOURCES`·`OIDC_EXTRA_AUDIENCES` 추가, yeorot backend `verifyOidcToken` audience 목록 검증(eac11f6). 운영 확인: discovery `registration_endpoint`, PRM 200, 401 `WWW-Authenticate`+resource_metadata, DCR 등록, resource 검증(`invalid_target`+state 보존), public client 토큰 인증
+- [ ] yeorot backend 컨테이너 재기동 (`docker compose up -d backend` — 이미지 빌드 완료 후)
+- [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증 (사용자 인터랙티브 로그인 필요)
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성

@@ -149,10 +149,10 @@ OAuth 인가 서버를 새로 만들 필요 없음 — **기존 SSO 서버 onl1d
 알려진 한계(MVP 수용): 세션이 토큰 문자열에 바인딩되므로 access token 갱신 시 기존 세션은 401 → 클라이언트가 재초기화함.
 
 - [x] 설계 확정 — onl1d 재활용 + resource indicator 방식 (위 표)
-- [x] yeorot-mcp: PRM 엔드포인트(`/.well-known/oauth-protected-resource` + `/mcp` 변형, `MCP_RESOURCE_URL`·`MCP_AUTH_SERVER_URL` env로 활성화) + 401 `WWW-Authenticate`에 resource_metadata + `yrk_` 외 Bearer 토큰 패스스루 — 구현·로컬 검증 완료, **운영 재배포는 보류** (onl1d 작업 후 일괄)
-- [ ] onl1d: DCR + public client + resource indicator (운영 SSO라 별도 세션에서 신중히 — 자체 테스트 스위트 필수 통과)
-- [ ] yeorot backend: audience 목록 검증
-- [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증
+- [x] yeorot-mcp: PRM 엔드포인트(`/.well-known/oauth-protected-resource` + `/mcp` 변형, `MCP_RESOURCE_URL`·`MCP_AUTH_SERVER_URL` env로 활성화) + 401 `WWW-Authenticate`에 resource_metadata + `yrk_` 외 Bearer 토큰 패스스루 — 구현·로컬 검증 완료, 2026-06-13 운영 배포 완료 (PRM 200, 401 헤더 확인)
+- [x] onl1d: DCR + public client + resource indicator — onl1d 레포에서 완료 (테스트 67/67), 2026-06-13 운영 배포 + `ALLOWED_RESOURCES` env 설정. 운영 검증: discovery `registration_endpoint`·DCR 등록·resource 검증(`invalid_target`)·public client 토큰 인증 확인
+- [x] yeorot backend: audience 목록 검증 — `OIDC_EXTRA_AUDIENCES` env 추가 (yeorot eac11f6), svc compose에 `https://mcp.yeorot.cloud/mcp` 설정
+- [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증 (사용자 인터랙티브 로그인 필요 — backend 재기동 후)
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋
