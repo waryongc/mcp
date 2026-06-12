@@ -58,12 +58,14 @@
 - [x] CORS(`Mcp-Session-Id` 노출)·DNS rebinding 보호(`MCP_ALLOWED_HOSTS/ORIGINS`) + Dockerfile(멀티스테이지, healthcheck — 이미지 빌드·기동 확인)
 - [x] TLS 배포 — `https://mcp.yeorot.cloud` 운영 개시. yeorot 인프라(`/home/xiilab/svc/docker-compose.yml`)에 `mcp` 서비스 추가, nginx 서버 블록(SSE 대응) + Let's Encrypt 인증서(yeorot.cloud와 통합, webroot 방식 자동 갱신 전환). 엔드투엔드 검증: healthz·401·세션·tools/list·백엔드 도달 확인
 - [ ] Claude 커스텀 커넥터로 연결 검증 (사용자가 본인 키로: `claude mcp add --transport http yeorot https://mcp.yeorot.cloud/mcp --header "Authorization: Bearer yrk_..."`)
+- [x] (운영 개선) nginx 설정을 디렉터리 마운트로 전환 — 단일 파일 마운트의 inode 교체 문제 해소, 이제 `nginx -s reload`만으로 설정 반영
 
 ### Phase 2 — OAuth 2.1 (원클릭 연결 UX)
 - [ ] yeorot OAuth 인가 서버 + MCP 리소스 서버 (`server/auth/`, RFC 9728 PRM)
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성
+- [ ] 루트(`/`) 안내 페이지 — 브라우저 접속 시 연결 방법 안내 (mcp.linear.app이 /docs/mcp로 리다이렉트하는 것 참고)
 
 ### 미결정
 - 호스팅 대상(yeorot.cloud VM vs PaaS), Phase 2 OAuth 범위(yeorot 백엔드 작업 수반), 세션 모드
