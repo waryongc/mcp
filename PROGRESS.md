@@ -32,6 +32,7 @@
 - [x] 공통 유틸리티 프리미티브(Notifications·Tasks(실험적)) 설명 추가 — 공식 문서 최신본 반영
 - [x] 아키텍처·시퀀스 다이어그램을 PNG/SVG로 렌더링해 `docs/img/`에 저장 + README 본문에 이미지 임베드 (Mermaid 소스는 `<details>`로 보존 — GitHub Mermaid 렌더 실패 대응)
 - [x] 기술 스택 각 항목(`@modelcontextprotocol/sdk`·Zod·dotenv·esbuild) 상세 설명 추가
+- [x] README 원격 서버 연결 사용법 문서화 — 원클릭 OAuth(claude.ai/Desktop/모바일)·Claude Code·API 키 방식 안내 추가, 전송 섹션/환경 변수 표/프로젝트 구조 현행화 ("미착수" 문구 제거)
 
 ---
 

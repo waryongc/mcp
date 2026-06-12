@@ -13,7 +13,8 @@
 - [프로젝트 구조](#프로젝트-구조)
 - [환경 변수](#환경-변수)
 - [로컬 실행](#로컬-실행)
-- [Claude Desktop 연결 설정](#claude-desktop-연결-설정)
+- [원격 서버로 연결하기 (추천)](#원격-서버로-연결하기-추천)
+- [Claude Desktop 연결 설정 (로컬 stdio)](#claude-desktop-연결-설정-로컬-stdio)
 - [인스톨러 앱](#인스톨러-앱)
 - [Tool 추가 방법](#tool-추가-방법)
 - [기술 스택](#기술-스택)
@@ -138,15 +139,17 @@ sequenceDiagram
 
 이 서버는 **Tools만** 사용합니다. Claude가 대화 중 필요하다고 판단하면 `tools/call`로 호출하고, 서버가 yeorot REST API를 실행한 뒤 결과를 반환합니다.
 
-### 전송: Stdio
+### 전송: Stdio + Streamable HTTP
 
-yeorot-mcp는 **로컬 stdio 서버**입니다. MCP Host가 이 프로세스를 자식 프로세스로 spawn하고, 표준 입출력으로 JSON-RPC 메시지를 주고받습니다.
+yeorot-mcp는 두 가지 전송을 지원합니다.
+
+**로컬 stdio 서버** (`src/index.ts`) — MCP Host가 이 프로세스를 자식 프로세스로 spawn하고, 표준 입출력으로 JSON-RPC 메시지를 주고받습니다.
 
 - `stdin`  ◀── JSON-RPC 요청 수신 (`initialize` / `tools/list` / `tools/call`)
 - `stdout` ──▶ JSON-RPC 응답 송신 (tool 결과)
 - `stderr` ──▶ 로그 출력 (디버깅용 — **AI 응답에 노출되지 않음.** 그래서 API 키·내부 URL·에러는 stderr로만 출력)
 
-> 📋 **원격(웹) 서버 전환 계획:** 이 로컬 stdio 서버를 웹에 띄워 여러 사용자가 원격 접속(Streamable HTTP)하는 형태로 확장하는 설계는 [docs/remote-server-plan.md](docs/remote-server-plan.md)를 참고하세요. (아직 미착수 — 계획 단계)
+**원격 Streamable HTTP 서버** (`src/server-http.ts`) — `https://mcp.yeorot.cloud/mcp`로 운영 중입니다. 여러 사용자가 동시에 접속하며, 요청별 인증(OAuth 토큰 또는 API 키)을 AsyncLocalStorage로 격리합니다. 연결 방법은 [원격 서버로 연결하기](#원격-서버로-연결하기-추천), 설계는 [docs/remote-server-plan.md](docs/remote-server-plan.md)를 참고하세요.
 
 ---
 
@@ -169,7 +172,10 @@ yeorot-mcp는 **로컬 stdio 서버**입니다. MCP Host가 이 프로세스를 
 ```
 yeorot-mcp/
 ├── src/
-│   ├── index.ts              # MCP 서버 진입점 — 도구 등록 & 서버 시작
+│   ├── index.ts              # stdio 진입점 — 로컬 단일 사용자
+│   ├── server-http.ts        # Streamable HTTP 진입점 — 원격 멀티유저 (mcp.yeorot.cloud)
+│   ├── auth-context.ts       # AsyncLocalStorage — 요청별 인증 키 격리
+│   ├── register-tools.ts     # 도구 등록 (stdio·HTTP 공유)
 │   ├── config.ts             # 환경변수 검증 (Zod)
 │   ├── client.ts             # yeorot API HTTP 클라이언트
 │   ├── dates.ts              # KST 날짜 유틸
@@ -180,7 +186,9 @@ yeorot-mcp/
 │       ├── createTask.ts         # 태스크 생성
 │       ├── updateTaskStatus.ts   # 태스크 상태·진행률 변경
 │       ├── getRackStatus.ts      # 서버 랙 현황 조회
-│       └── getProjectStatus.ts   # 프로젝트 현황 조회
+│       ├── getProjectStatus.ts   # 프로젝트 현황 조회
+│       ├── searchTasks.ts        # 키워드 검색
+│       └── getStats.ts           # 기간별 생산성 통계
 ├── installer/                # Electron GUI 설치 프로그램
 │   ├── src/
 │   └── package.json
@@ -189,6 +197,7 @@ yeorot-mcp/
 │   └── bundle.mjs            # esbuild ESM 번들 (인스톨러용)
 ├── .github/workflows/
 │   └── build-installer.yml   # 태그 푸시 → 자동 빌드 & GitHub Release
+├── Dockerfile                # 원격 HTTP 서버 컨테이너 (멀티스테이지)
 ├── .env.example
 ├── package.json
 └── tsconfig.json
@@ -203,9 +212,14 @@ yeorot-mcp/
 | 변수 | 필수 | 기본값 | 설명 |
 |---|---|---|---|
 | `YEOROT_API_URL` | ✅ | — | yeorot 서버 주소 (예: `https://yeorot.cloud/api/v1`) |
-| `YEOROT_API_KEY` | ✅ | — | API 키 (`yrk_` 접두사 필수) |
+| `YEOROT_API_KEY` | stdio만 ✅ | — | API 키 (`yrk_` 접두사 필수). HTTP 모드는 요청별 Bearer 인증을 쓰므로 불필요 |
 | `TZ` | | `Asia/Seoul` | 타임존 |
 | `YEOROT_TIMEOUT_MS` | | `10000` | 요청 타임아웃 (ms) |
+| `PORT` | | `3000` | HTTP 모드 포트 (`npm run start:http`) |
+| `MCP_ALLOWED_HOSTS` | HTTP 배포 시 ✅ | localhost | DNS rebinding 보호용 허용 Host 목록 (콤마 구분) |
+| `MCP_ALLOWED_ORIGINS` | | — | 허용 Origin 목록 (콤마 구분, 브라우저 클라이언트 대비) |
+| `MCP_RESOURCE_URL` | OAuth 사용 시 ✅ | — | RFC 9728 PRM의 resource 식별자 (예: `https://mcp.yeorot.cloud/mcp`) |
+| `MCP_AUTH_SERVER_URL` | OAuth 사용 시 ✅ | — | 인가 서버(onl1d) 주소 — PRM `authorization_servers`에 노출 |
 
 ---
 
@@ -228,7 +242,38 @@ npm run build && npm start
 
 ---
 
-## Claude Desktop 연결 설정
+## 원격 서버로 연결하기 (추천)
+
+설치 없이 URL 하나로 연결합니다. 서버 주소: **`https://mcp.yeorot.cloud/mcp`**
+
+### 방법 A — 원클릭 로그인 (claude.ai · Claude Desktop · 모바일)
+
+1. claude.ai → **설정(Settings) → 커넥터(Connectors) → 커스텀 커넥터 추가(Add custom connector)**
+2. URL에 `https://mcp.yeorot.cloud/mcp` 입력 후 추가
+3. **연결(Connect)** 클릭 → yeorot SSO 로그인 창이 뜨면 본인 계정으로 로그인
+4. 끝 — 새 대화에서 커넥터를 켜고 "오늘 내 태스크 보여줘"처럼 말하면 됩니다
+
+API 키 발급·복사가 필요 없고, 한 번 연결하면 같은 계정의 웹·데스크톱·모바일 어디서든 사용됩니다. (커스텀 커넥터는 Pro/Max/Team/Enterprise 플랜에서 사용 가능)
+
+### 방법 B — Claude Code
+
+```bash
+# OAuth 로그인 방식 (추천)
+claude mcp add --transport http yeorot https://mcp.yeorot.cloud/mcp
+# 이후 Claude Code 세션에서 /mcp → yeorot 선택 → Authenticate → 브라우저 로그인
+
+# 또는 API 키 방식 (헤드리스/스크립트 환경)
+claude mcp add --transport http yeorot https://mcp.yeorot.cloud/mcp \
+  --header "Authorization: Bearer yrk_발급받은키"
+```
+
+> 로그인 대신 yeorot에서 발급한 API 키(`yrk_` 접두사)를 Bearer 헤더로 직접 전달할 수도 있습니다. 토큰이 만료되면 세션이 401로 끊겼다가 클라이언트가 자동으로 재연결합니다.
+
+---
+
+## Claude Desktop 연결 설정 (로컬 stdio)
+
+> 원격 서버 연결(위)이 더 간단합니다. 로컬 stdio 방식은 오프라인 환경이나 직접 빌드해 쓰고 싶은 경우에 사용하세요.
 
 ### 사전 준비
 
