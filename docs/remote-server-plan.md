@@ -129,8 +129,8 @@ HTTPS /mcp  <────┤   각자 자기 yeorot 키  ├──> yeorot-mcp (
 - [x] `Authorization: Bearer yrk_...` 헤더 → `runWithApiKey` — mock API로 동시 사용자 키 격리 검증
 - [x] `/healthz`, CORS, DNS rebinding 보호 (`MCP_ALLOWED_HOSTS`/`MCP_ALLOWED_ORIGINS` env)
 - [x] Dockerfile (멀티스테이지 node:22-alpine, non-root, healthcheck)
-- [ ] 배포(TLS) — 호스팅 대상 미결정(§9)
-- [ ] Claude 커스텀 커넥터로 연결 검증 (배포 후)
+- [x] 배포(TLS) — `https://mcp.yeorot.cloud` (yeorot.cloud 서버의 nginx + 기존 compose에 `mcp` 서비스로 합류. 인증서는 yeorot.cloud SAN에 mcp 서브도메인 추가, webroot 방식으로 자동 갱신)
+- [ ] Claude 커스텀 커넥터로 연결 검증 (사용자 본인 키로 테스트)
 
 ### Phase 2 — OAuth 2.1 (대기업 커넥터 수준 UX)
 - [ ] yeorot OAuth 인가 서버 (authorize/token, DCR)

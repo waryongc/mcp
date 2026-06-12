@@ -146,6 +146,17 @@ Secrets 등록 위치: GitHub → Settings → Secrets and variables → Actions
 
 ---
 
+## 원격 서버 배포 (mcp.yeorot.cloud)
+
+- **주소**: `https://mcp.yeorot.cloud/mcp` (healthz: `/healthz`)
+- **인프라**: yeorot 본체와 같은 서버의 `/home/xiilab/svc/docker-compose.yml` 내 `mcp` 서비스 (이 레포의 Dockerfile 빌드)
+- **nginx**: `/home/xiilab/svc/nginx/nginx.conf`의 `mcp.yeorot.cloud` 서버 블록 — ⚠️ 단일 파일 bind mount라 수정 후 `nginx -s reload`로는 반영 안 됨, `docker compose up -d --force-recreate nginx` 필요
+- **인증서**: Let's Encrypt `yeorot.cloud` 인증서에 SAN으로 포함, webroot(`/home/xiilab/svc/certbot-webroot`) 방식 자동 갱신 + 갱신 시 nginx reload 훅
+- **재배포**: 코드 변경 후 `cd /home/xiilab/svc && docker compose build mcp && docker compose up -d mcp`
+- **연결**(클라이언트): `claude mcp add --transport http yeorot https://mcp.yeorot.cloud/mcp --header "Authorization: Bearer yrk_..."`
+
+---
+
 ## 환경 변수
 
 | 변수 | 필수 | 기본값 | 설명 |

@@ -56,8 +56,8 @@
 - [x] `server-http.ts` (Express + StreamableHTTPServerTransport, `/mcp`·`/healthz`) — stateful 세션, `npm run start:http`
 - [x] `Authorization: Bearer yrk_...` 헤더 → 요청별 키 — `runWithApiKey`로 격리, 세션-키 바인딩(다른 키로 세션 재사용 시 401). mock API로 3-사용자 키 격리 검증 완료
 - [x] CORS(`Mcp-Session-Id` 노출)·DNS rebinding 보호(`MCP_ALLOWED_HOSTS/ORIGINS`) + Dockerfile(멀티스테이지, healthcheck — 이미지 빌드·기동 확인)
-- [ ] TLS 배포 (yeorot 인프라에 리버스 프록시 구성 — 호스팅 대상 미결정)
-- [ ] Claude 커스텀 커넥터로 연결 검증 (배포 후)
+- [x] TLS 배포 — `https://mcp.yeorot.cloud` 운영 개시. yeorot 인프라(`/home/xiilab/svc/docker-compose.yml`)에 `mcp` 서비스 추가, nginx 서버 블록(SSE 대응) + Let's Encrypt 인증서(yeorot.cloud와 통합, webroot 방식 자동 갱신 전환). 엔드투엔드 검증: healthz·401·세션·tools/list·백엔드 도달 확인
+- [ ] Claude 커스텀 커넥터로 연결 검증 (사용자가 본인 키로: `claude mcp add --transport http yeorot https://mcp.yeorot.cloud/mcp --header "Authorization: Bearer yrk_..."`)
 
 ### Phase 2 — OAuth 2.1 (원클릭 연결 UX)
 - [ ] yeorot OAuth 인가 서버 + MCP 리소스 서버 (`server/auth/`, RFC 9728 PRM)
