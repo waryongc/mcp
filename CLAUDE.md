@@ -9,8 +9,8 @@
 **yeorot-mcp** — Claude(AI)가 [yeorot](https://github.com/waryongc/yeorot) REST API를 직접 호출할 수 있도록 감싼 MCP(Model Context Protocol) 서버.
 사용자가 말로 yeorot을 조작할 수 있게 해주는 Claude ↔ yeorot 중간 레이어.
 
-- **전송**: stdio (Claude Desktop / Claude Code가 자식 프로세스로 spawn)
-- **인증**: yeorot API 키 (`yrk_` 접두사, yeorot `api_keys` 테이블)
+- **전송**: stdio (Claude Desktop / Claude Code가 자식 프로세스로 spawn) + Streamable HTTP (`src/server-http.ts`, 원격 멀티유저)
+- **인증**: yeorot API 키 (`yrk_` 접두사, yeorot `api_keys` 테이블) — stdio는 `.env` 단일 키, HTTP는 요청별 `Authorization: Bearer` 키 (AsyncLocalStorage로 격리, `src/auth-context.ts`)
 - **스택**: TypeScript + Node.js (ESM) + @modelcontextprotocol/sdk + Zod
 - **연관 프로젝트**: yeorot 메인 서비스 (`/home/xiilab/dev/yeorot`, github.com/waryongc/yeorot)
 
@@ -151,9 +151,12 @@ Secrets 등록 위치: GitHub → Settings → Secrets and variables → Actions
 | 변수 | 필수 | 기본값 | 설명 |
 |---|---|---|---|
 | `YEOROT_API_URL` | ✅ | — | yeorot 서버 주소 (예: `https://yeorot.cloud/api/v1`) |
-| `YEOROT_API_KEY` | ✅ | — | API 키 (`yrk_` 접두사 필수) |
+| `YEOROT_API_KEY` | stdio만 ✅ | — | API 키 (`yrk_` 접두사 필수). HTTP 모드는 요청별 Bearer 키를 쓰므로 불필요 |
 | `TZ` | | `Asia/Seoul` | 타임존 |
 | `YEOROT_TIMEOUT_MS` | | `10000` | 요청 타임아웃 (ms) |
+| `PORT` | | `3000` | HTTP 모드 포트 (`npm run start:http`) |
+| `MCP_ALLOWED_HOSTS` | HTTP 배포 시 ✅ | localhost | DNS rebinding 보호용 허용 Host 목록 (콤마 구분, 예: `mcp.yeorot.cloud`). 미설정 시 localhost만 허용되어 외부 요청은 403 |
+| `MCP_ALLOWED_ORIGINS` | | — | 허용 Origin 목록 (콤마 구분, 브라우저 클라이언트 대비) |
 
 ---
 

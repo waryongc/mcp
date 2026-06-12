@@ -8,14 +8,20 @@
     "build": "tsc",
     "bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/bundle.mjs --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\"",
     "dev": "tsx src/index.ts",
-    "start": "node dist/index.js"
+    "dev:http": "tsx src/server-http.ts",
+    "start": "node dist/index.js",
+    "start:http": "node dist/server-http.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "cors": "^2.8.6",
     "dotenv": "^16.0.0",
+    "express": "^5.2.1",
     "zod": "^3.22.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^20.0.0",
     "esbuild": "^0.24.0",
     "tsx": "^4.0.0",

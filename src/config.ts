@@ -12,6 +12,11 @@ const ConfigSchema = z.object({
     .optional(),
   TZ: z.string().optional().default('Asia/Seoul'),
   YEOROT_TIMEOUT_MS: z.coerce.number().int().positive().optional().default(10000),
+  // --- 원격(HTTP) 모드 전용 ---
+  PORT: z.coerce.number().int().positive().optional().default(3000),
+  // DNS rebinding 보호용 허용 Host/Origin 목록 (콤마 구분). 미설정 시 localhost만 허용
+  MCP_ALLOWED_HOSTS: z.string().optional(),
+  MCP_ALLOWED_ORIGINS: z.string().optional(),
 });
 
 const parsed = ConfigSchema.safeParse(process.env);

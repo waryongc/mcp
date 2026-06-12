@@ -52,10 +52,12 @@
 - [x] 기존 stdio 동작 회귀 테스트 — 키 누락/잘못된 접두사 거부, tools/list 7개, tools/call fallback 키 경로, 번들 빌드 확인
 
 ### Phase 1 — Streamable HTTP + Bearer 키 (MVP)
-- [ ] `server-http.ts` (Express + StreamableHTTPServerTransport, `/mcp`·`/healthz`)
-- [ ] `Authorization: Bearer yrk_...` 헤더 → 요청별 키
-- [ ] CORS·DNS rebinding 보호, Dockerfile + TLS 배포
-- [ ] Claude 커스텀 커넥터로 연결 검증
+- [x] Phase 1 원격 HTTP 서버 구현 — server-http.ts·Bearer 인증·보안·Dockerfile (배포·커넥터 검증 제외)
+- [x] `server-http.ts` (Express + StreamableHTTPServerTransport, `/mcp`·`/healthz`) — stateful 세션, `npm run start:http`
+- [x] `Authorization: Bearer yrk_...` 헤더 → 요청별 키 — `runWithApiKey`로 격리, 세션-키 바인딩(다른 키로 세션 재사용 시 401). mock API로 3-사용자 키 격리 검증 완료
+- [x] CORS(`Mcp-Session-Id` 노출)·DNS rebinding 보호(`MCP_ALLOWED_HOSTS/ORIGINS`) + Dockerfile(멀티스테이지, healthcheck — 이미지 빌드·기동 확인)
+- [ ] TLS 배포 (yeorot 인프라에 리버스 프록시 구성 — 호스팅 대상 미결정)
+- [ ] Claude 커스텀 커넥터로 연결 검증 (배포 후)
 
 ### Phase 2 — OAuth 2.1 (원클릭 연결 UX)
 - [ ] yeorot OAuth 인가 서버 + MCP 리소스 서버 (`server/auth/`, RFC 9728 PRM)

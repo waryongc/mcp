@@ -124,12 +124,13 @@ HTTPS /mcp  <────┤   각자 자기 yeorot 키  ├──> yeorot-mcp (
 - [x] `config.ts`에서 `YEOROT_API_KEY` 선택값化 (stdio 엔트리에서 필수 검증 유지)
 - [x] 기존 stdio 동작 회귀 테스트 (키 가드·tools/list·tools/call·번들 빌드)
 
-### Phase 1 — Streamable HTTP + Bearer 키 (MVP, "모두 접속 가능")
-- [ ] `server-http.ts` (Express + StreamableHTTPServerTransport)
-- [ ] `Authorization: Bearer yrk_...` 헤더 → `runWithApiKey`
-- [ ] `/healthz`, CORS, DNS rebinding 보호
-- [ ] Dockerfile + 배포(TLS)
-- [ ] Claude 커스텀 커넥터로 연결 검증
+### Phase 1 — Streamable HTTP + Bearer 키 (MVP, "모두 접속 가능") — 코드 완료, 배포 대기
+- [x] `server-http.ts` (Express + StreamableHTTPServerTransport) — 단일 인스턴스 stateful, 세션은 최초 키에 바인딩
+- [x] `Authorization: Bearer yrk_...` 헤더 → `runWithApiKey` — mock API로 동시 사용자 키 격리 검증
+- [x] `/healthz`, CORS, DNS rebinding 보호 (`MCP_ALLOWED_HOSTS`/`MCP_ALLOWED_ORIGINS` env)
+- [x] Dockerfile (멀티스테이지 node:22-alpine, non-root, healthcheck)
+- [ ] 배포(TLS) — 호스팅 대상 미결정(§9)
+- [ ] Claude 커스텀 커넥터로 연결 검증 (배포 후)
 
 ### Phase 2 — OAuth 2.1 (대기업 커넥터 수준 UX)
 - [ ] yeorot OAuth 인가 서버 (authorize/token, DCR)
