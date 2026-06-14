@@ -180,6 +180,10 @@ Secrets 등록 위치: GitHub → Settings → Secrets and variables → Actions
 | `updateTaskStatus` | 태스크 상태·진행률 변경 |
 | `getRackStatus` | 서버 랙 현황 조회 |
 | `getProjectStatus` | 프로젝트 현황·진행률·멤버 기여도 조회 |
+| `searchTasks` | 키워드로 태스크·프로젝트 검색 |
+| `getStats` | 기간별 생산성 통계 조회 |
+| `deleteTask` | 태스크 삭제 (소프트 삭제) |
+| `moveTask` | 태스크 계획 날짜 이동 |
 
 ---
 

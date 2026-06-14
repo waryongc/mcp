@@ -16,10 +16,8 @@
 - [x] `updateTaskStatus` 확장 — title·priority·planned_date·due_time·project_id·estimated_minutes·story_points 필드 추가
 - [x] Tool description 개선 — 사용 맥락 기반 설명으로 전면 개선
 
-### 추가 예정
-
-- [ ] `deleteTask` — 태스크 삭제
-- [ ] `moveTask` — 태스크 날짜 이동
+- [x] `deleteTask` — 태스크 삭제 (소프트 삭제, `DELETE /tasks/:id`)
+- [x] `moveTask` — 태스크 날짜 이동 (`PATCH /tasks/:id/move`)
 
 ---
 

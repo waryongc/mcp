@@ -7,6 +7,8 @@ import { createTaskTool } from './tools/createTask.js';
 import { getProjectStatusTool } from './tools/getProjectStatus.js';
 import { searchTasksTool } from './tools/searchTasks.js';
 import { getStatsTool } from './tools/getStats.js';
+import { deleteTaskTool } from './tools/deleteTask.js';
+import { moveTaskTool } from './tools/moveTask.js';
 import { checkForUpdate } from './update.js';
 
 // 업데이트 체크 — 백그라운드, 실패 무시
@@ -132,6 +134,31 @@ export function registerTools(server: McpServer): void {
     },
     async ({ period, date, from, to }) => {
       try { return ok(await getStatsTool.execute({ period, date, from, to })); }
+      catch (e) { return fail(e); }
+    },
+  );
+
+  server.tool(
+    deleteTaskTool.name,
+    deleteTaskTool.description,
+    {
+      id: z.string().uuid().describe('삭제할 태스크 UUID'),
+    },
+    async ({ id }) => {
+      try { return ok(await deleteTaskTool.execute({ id })); }
+      catch (e) { return fail(e); }
+    },
+  );
+
+  server.tool(
+    moveTaskTool.name,
+    moveTaskTool.description,
+    {
+      id: z.string().uuid().describe('이동할 태스크 UUID'),
+      planned_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('옮길 날짜 YYYY-MM-DD'),
+    },
+    async ({ id, planned_date }) => {
+      try { return ok(await moveTaskTool.execute({ id, planned_date })); }
       catch (e) { return fail(e); }
     },
   );

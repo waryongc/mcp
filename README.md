@@ -129,7 +129,7 @@ sequenceDiagram
 
 | 프리미티브 | 설명 | yeorot-mcp |
 |---|---|---|
-| **Tools** | AI가 호출하는 실행 함수 (API·DB·파일 조작) | ✅ 사용 (7개 Tool 등록) |
+| **Tools** | AI가 호출하는 실행 함수 (API·DB·파일 조작) | ✅ 사용 (9개 Tool 등록) |
 | **Resources** | AI가 읽는 컨텍스트 데이터 (파일·DB 레코드 등) | — 미사용 |
 | **Prompts** | 재사용 가능한 프롬프트 템플릿 (시스템 프롬프트·few-shot 등) | — 미사용 |
 
@@ -164,6 +164,8 @@ yeorot-mcp는 두 가지 전송을 지원합니다.
 | `getProjectStatus` | 프로젝트 현황·진행률·멤버 기여도 조회 | `project_id` (선택, UUID), `include_tasks` |
 | `searchTasks` | 키워드로 태스크·프로젝트 검색 | `q` (필수, 검색 키워드 2자 이상) |
 | `getStats` | 기간별 생산성 통계 조회 | `period` (day/week/month), `date`, `from`, `to` |
+| `deleteTask` | 태스크 삭제 (소프트 삭제) | `id` (필수, UUID) |
+| `moveTask` | 태스크 계획 날짜 이동 | `id` (필수, UUID), `planned_date` (필수, YYYY-MM-DD) |
 
 ---
 
@@ -188,7 +190,9 @@ yeorot-mcp/
 │       ├── getRackStatus.ts      # 서버 랙 현황 조회
 │       ├── getProjectStatus.ts   # 프로젝트 현황 조회
 │       ├── searchTasks.ts        # 키워드 검색
-│       └── getStats.ts           # 기간별 생산성 통계
+│       ├── getStats.ts           # 기간별 생산성 통계
+│       ├── deleteTask.ts         # 태스크 삭제 (소프트)
+│       └── moveTask.ts           # 태스크 날짜 이동
 ├── installer/                # Electron GUI 설치 프로그램
 │   ├── src/
 │   └── package.json
