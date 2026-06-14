@@ -70,6 +70,13 @@ app.get('/healthz', (_req, res) => {
   res.json({ status: 'ok', version: VERSION });
 });
 
+// 브라우저로 루트 접속 시 연결 방법 안내로 리다이렉트 (mcp.linear.app → linear.app/docs/mcp 방식)
+// 임시: README 원격 연결 섹션. yeorot.cloud/docs/mcp 페이지가 생기면 이 URL만 교체.
+const DOCS_REDIRECT_URL = encodeURI('https://github.com/waryongc/mcp#원격-서버로-연결하기-추천');
+app.get('/', (_req, res) => {
+  res.redirect(302, DOCS_REDIRECT_URL);
+});
+
 if (prmDocument) {
   // 루트 + 경로 변형(RFC 9728 §3: resource가 /mcp 경로를 가지면 이 경로로 조회하는 클라이언트도 있음)
   app.get('/.well-known/oauth-protected-resource', (_req, res) => {

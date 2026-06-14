@@ -69,7 +69,7 @@
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성
-- [ ] 루트(`/`) 안내 페이지 — 브라우저 접속 시 연결 방법 안내 (mcp.linear.app이 /docs/mcp로 리다이렉트하는 것 참고)
+- [x] 루트(`/`) 안내 페이지 — `GET /` → README 원격 연결 섹션으로 302 리다이렉트 (임시; yeorot.cloud/docs/mcp 페이지 생기면 Location URL만 교체). mcp.linear.app→linear.app/docs/mcp 방식. ⚠️ 운영 컨테이너 재배포 대기 중
 
 ### 미결정
 - 호스팅 대상(yeorot.cloud VM vs PaaS), Phase 2 OAuth 범위(yeorot 백엔드 작업 수반), 세션 모드
