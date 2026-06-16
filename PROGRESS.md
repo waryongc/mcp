@@ -63,7 +63,7 @@
 - [x] Phase 2 설계 + MCP 리소스 서버 구현 — 기존 SSO(onl1d)를 인가 서버로 재활용, RFC 9728 PRM + WWW-Authenticate + OAuth 토큰 패스스루 (상세: [`docs/remote-server-plan.md`](docs/remote-server-plan.md) Phase 2)
 - [x] Phase 2 운영 배포 + 서버 측 E2E 검증 — onl1d(DCR·public client·resource indicator, 테스트 67/67)와 MCP 컨테이너(PRM 포함) 재배포, svc compose에 `ALLOWED_RESOURCES`·`OIDC_EXTRA_AUDIENCES` 추가, yeorot backend `verifyOidcToken` audience 목록 검증(eac11f6). 운영 확인: discovery `registration_endpoint`, PRM 200, 401 `WWW-Authenticate`+resource_metadata, DCR 등록, resource 검증(`invalid_target`+state 보존), public client 토큰 인증
 - [x] yeorot backend 컨테이너 재기동 — eac11f6 빌드 이미지(937450c6)로 recreate, healthy·`OIDC_EXTRA_AUDIENCES` 주입·nginx 경유 응답(401) 확인
-- [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증 (사용자 인터랙티브 로그인 필요)
+- [x] Claude "원격 MCP 추가" 원클릭 로그인 검증 — 2026-06-16 사용자 인터랙티브 로그인 끝까지 성공 (sso.yeorot.cloud:443 이전 + DCR confidential client 지원 후)
   - **2026-06-16 진단**: claude.ai 커넥터 연결 시 "Couldn't reach the MCP server"(ofid_…). nginx 로그상 커넥터는 `POST /mcp`(401)·PRM(200)까지 오지만, PRM의 `authorization_servers`가 가리키는 **비표준 포트 `:44000`(onl1d)에는 도달하지 못함**(onl1d 로그 0건). 대신 MCP origin `mcp.yeorot.cloud`에 `POST /register`(DCR)→404로 폴백하다 끊김. Anthropic 문서상 cross-host 인가서버는 지원하나 비표준 포트는 미보장(SSRF 포트 제한 추정).
   - **해결 방향**: onl1d 인가서버를 **`https://sso.yeorot.cloud`(443)** 로 이전(issuer 단일화). RFC 8414 라우트는 이미 추가됨(onl1d ab630f9)이나 단독으론 미해결. 사용자가 DNS A레코드·Google 리디렉트 URI 추가 완료. **남은 단계 상세 체크리스트: onl1d `docs/features/18-mcp-oauth.md` "sso.yeorot.cloud 443 이전" 절 참조.**
   - **2026-06-16 서버측 이전 완료**: ① LE 인증서 SAN에 `sso.yeorot.cloud` 추가(webroot expand) ② nginx에 `sso.yeorot.cloud` 443 서버 블록(`proxy_pass http://onl1d:3000`) + 80블록 server_name에 sso 추가 ③ svc `.env`의 `SSO_ISSUER`/`SSO_AUTHORIZE_URL`/`GOOGLE_REDIRECT_URI`를 sso 443으로 변경 ④ onl1d·backend·mcp 재배포. 검증: onl1d issuer·openid-config·registration_endpoint 전부 `https://sso.yeorot.cloud`(443), MCP PRM `authorization_servers=["https://sso.yeorot.cloud"]`, 401+WWW-Authenticate 정상. `:44000` 디스커버리 체인에서 제거됨(포트 4000 블록은 롤백 안전망으로 유지).
@@ -71,6 +71,7 @@
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성
+- [ ] (백로그/결정대기) 멀티 계정 전환 UX — 두 yeorot 계정 번갈아 연결 시 onl1d `sid` 쿠키 자동 SSO로 전환이 막힘. 현재 우회=재연결 전 `https://sso.yeorot.cloud/logout`. 개선안: onl1d `/authorize`가 OIDC `prompt=login`/`select_account`를 받으면 세션 있어도 로그인 강제(단 claude.ai 커넥터가 해당 파라미터 보내는지 미확인). 자주 전환 필요해지면 적용 검토. 상세: 메모 `mcp-oauth-multi-account-switching`
 - [x] 루트(`/`) 안내 페이지 — `GET /` → README 원격 연결 섹션으로 302 리다이렉트 (임시; yeorot.cloud/docs/mcp 페이지 생기면 Location URL만 교체). mcp.linear.app→linear.app/docs/mcp 방식. 운영 배포 반영 확인 완료
 
 ### 미결정
