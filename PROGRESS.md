@@ -66,6 +66,7 @@
 - [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증 (사용자 인터랙티브 로그인 필요)
   - **2026-06-16 진단**: claude.ai 커넥터 연결 시 "Couldn't reach the MCP server"(ofid_…). nginx 로그상 커넥터는 `POST /mcp`(401)·PRM(200)까지 오지만, PRM의 `authorization_servers`가 가리키는 **비표준 포트 `:44000`(onl1d)에는 도달하지 못함**(onl1d 로그 0건). 대신 MCP origin `mcp.yeorot.cloud`에 `POST /register`(DCR)→404로 폴백하다 끊김. Anthropic 문서상 cross-host 인가서버는 지원하나 비표준 포트는 미보장(SSRF 포트 제한 추정).
   - **해결 방향**: onl1d 인가서버를 **`https://sso.yeorot.cloud`(443)** 로 이전(issuer 단일화). RFC 8414 라우트는 이미 추가됨(onl1d ab630f9)이나 단독으론 미해결. 사용자가 DNS A레코드·Google 리디렉트 URI 추가 완료. **남은 단계 상세 체크리스트: onl1d `docs/features/18-mcp-oauth.md` "sso.yeorot.cloud 443 이전" 절 참조.**
+  - **2026-06-16 서버측 이전 완료**: ① LE 인증서 SAN에 `sso.yeorot.cloud` 추가(webroot expand) ② nginx에 `sso.yeorot.cloud` 443 서버 블록(`proxy_pass http://onl1d:3000`) + 80블록 server_name에 sso 추가 ③ svc `.env`의 `SSO_ISSUER`/`SSO_AUTHORIZE_URL`/`GOOGLE_REDIRECT_URI`를 sso 443으로 변경 ④ onl1d·backend·mcp 재배포. 검증: onl1d issuer·openid-config·registration_endpoint 전부 `https://sso.yeorot.cloud`(443), MCP PRM `authorization_servers=["https://sso.yeorot.cloud"]`, 401+WWW-Authenticate 정상. `:44000` 디스커버리 체인에서 제거됨(포트 4000 블록은 롤백 안전망으로 유지). **남은 것: 사용자의 claude.ai 커넥터 재연결 테스트뿐.**
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성
