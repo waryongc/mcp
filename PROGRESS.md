@@ -64,6 +64,8 @@
 - [x] Phase 2 운영 배포 + 서버 측 E2E 검증 — onl1d(DCR·public client·resource indicator, 테스트 67/67)와 MCP 컨테이너(PRM 포함) 재배포, svc compose에 `ALLOWED_RESOURCES`·`OIDC_EXTRA_AUDIENCES` 추가, yeorot backend `verifyOidcToken` audience 목록 검증(eac11f6). 운영 확인: discovery `registration_endpoint`, PRM 200, 401 `WWW-Authenticate`+resource_metadata, DCR 등록, resource 검증(`invalid_target`+state 보존), public client 토큰 인증
 - [x] yeorot backend 컨테이너 재기동 — eac11f6 빌드 이미지(937450c6)로 recreate, healthy·`OIDC_EXTRA_AUDIENCES` 주입·nginx 경유 응답(401) 확인
 - [ ] Claude "원격 MCP 추가" 원클릭 로그인 검증 (사용자 인터랙티브 로그인 필요)
+  - **2026-06-16 진단**: claude.ai 커넥터 연결 시 "Couldn't reach the MCP server"(ofid_…). nginx 로그상 커넥터는 `POST /mcp`(401)·PRM(200)까지 오지만, PRM의 `authorization_servers`가 가리키는 **비표준 포트 `:44000`(onl1d)에는 도달하지 못함**(onl1d 로그 0건). 대신 MCP origin `mcp.yeorot.cloud`에 `POST /register`(DCR)→404로 폴백하다 끊김. Anthropic 문서상 cross-host 인가서버는 지원하나 비표준 포트는 미보장(SSRF 포트 제한 추정).
+  - **해결 방향**: onl1d 인가서버를 **`https://sso.yeorot.cloud`(443)** 로 이전(issuer 단일화). RFC 8414 라우트는 이미 추가됨(onl1d ab630f9)이나 단독으론 미해결. 사용자가 DNS A레코드·Google 리디렉트 URI 추가 완료. **남은 단계 상세 체크리스트: onl1d `docs/features/18-mcp-oauth.md` "sso.yeorot.cloud 443 이전" 절 참조.**
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성
