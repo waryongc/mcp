@@ -71,7 +71,7 @@
 
 ### Phase 3 — 하드닝 & 확장
 - [ ] 키별 레이트 리밋, 수평 확장(stateless/Redis), 관측성
-- [ ] (백로그/결정대기) 멀티 계정 전환 UX — 두 yeorot 계정 번갈아 연결 시 onl1d `sid` 쿠키 자동 SSO로 전환이 막힘. 현재 우회=재연결 전 `https://sso.yeorot.cloud/logout`. 개선안: onl1d `/authorize`가 OIDC `prompt=login`/`select_account`를 받으면 세션 있어도 로그인 강제(단 claude.ai 커넥터가 해당 파라미터 보내는지 미확인). 자주 전환 필요해지면 적용 검토. 상세: 메모 `mcp-oauth-multi-account-switching`
+- [x] 멀티 계정 전환 UX — 커넥터 재연결 시 다른 계정 선택 가능하게 함 (onl1d `85e21a5`) — 두 yeorot 계정 번갈아 연결 시 onl1d `sid` 쿠키 자동 SSO로 전환이 막히던 문제. 해결: onl1d `/authorize`가 세션이 있어도 **(A) OIDC `prompt=login`/`select_account`** 또는 **(B) DCR(MCP 커넥터) 클라이언트**면 자동 SSO를 건너뛰고 로그인 화면을 띄움. `clients.is_dcr` 컬럼 추가(DCR 등록 시 `true`), 일반 웹·관리자 클라이언트는 자동 SSO 유지(회귀 가드 테스트 포함, 73/73). 기존에 이미 등록된 커넥터 행은 `is_dcr=false`라 claude가 재등록하지 않으면 백필 SQL 필요(`UPDATE clients SET is_dcr=TRUE WHERE redirect_uris::text LIKE '%claude.ai%'`). 상세: 메모 `mcp-oauth-multi-account-switching`
 - [x] 루트(`/`) 안내 페이지 — `GET /` → README 원격 연결 섹션으로 302 리다이렉트 (임시; yeorot.cloud/docs/mcp 페이지 생기면 Location URL만 교체). mcp.linear.app→linear.app/docs/mcp 방식. 운영 배포 반영 확인 완료
 
 ### 미결정
