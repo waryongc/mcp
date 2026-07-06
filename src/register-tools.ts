@@ -10,6 +10,7 @@ import { getStatsTool } from './tools/getStats.js';
 import { deleteTaskTool } from './tools/deleteTask.js';
 import { moveTaskTool } from './tools/moveTask.js';
 import { getMorningBriefingTool } from './tools/getMorningBriefing.js';
+import { getWeeklyReviewDraftTool } from './tools/getWeeklyReviewDraft.js';
 import { checkForUpdate } from './update.js';
 
 // 업데이트 체크 — 백그라운드, 실패 무시
@@ -172,6 +173,18 @@ export function registerTools(server: McpServer): void {
     },
     async ({ date }) => {
       try { return ok(await getMorningBriefingTool.execute({ date })); }
+      catch (e) { return fail(e); }
+    },
+  );
+
+  server.tool(
+    getWeeklyReviewDraftTool.name,
+    getWeeklyReviewDraftTool.description,
+    {
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('조회할 주에 속한 아무 날짜 (YYYY-MM-DD). 생략하면 이번 주. 오늘 이후 날짜는 지원하지 않음'),
+    },
+    async ({ date }) => {
+      try { return ok(await getWeeklyReviewDraftTool.execute({ date })); }
       catch (e) { return fail(e); }
     },
   );
