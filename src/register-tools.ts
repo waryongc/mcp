@@ -9,6 +9,7 @@ import { searchTasksTool } from './tools/searchTasks.js';
 import { getStatsTool } from './tools/getStats.js';
 import { deleteTaskTool } from './tools/deleteTask.js';
 import { moveTaskTool } from './tools/moveTask.js';
+import { getMorningBriefingTool } from './tools/getMorningBriefing.js';
 import { checkForUpdate } from './update.js';
 
 // 업데이트 체크 — 백그라운드, 실패 무시
@@ -159,6 +160,18 @@ export function registerTools(server: McpServer): void {
     },
     async ({ id, planned_date }) => {
       try { return ok(await moveTaskTool.execute({ id, planned_date })); }
+      catch (e) { return fail(e); }
+    },
+  );
+
+  server.tool(
+    getMorningBriefingTool.name,
+    getMorningBriefingTool.description,
+    {
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('조회할 날짜 (YYYY-MM-DD). 생략하면 오늘. 오늘 이후 날짜는 지원하지 않음'),
+    },
+    async ({ date }) => {
+      try { return ok(await getMorningBriefingTool.execute({ date })); }
       catch (e) { return fail(e); }
     },
   );
