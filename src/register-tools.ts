@@ -11,6 +11,8 @@ import { deleteTaskTool } from './tools/deleteTask.js';
 import { moveTaskTool } from './tools/moveTask.js';
 import { getMorningBriefingTool } from './tools/getMorningBriefing.js';
 import { getWeeklyReviewDraftTool } from './tools/getWeeklyReviewDraft.js';
+import { getTeamDigestTool } from './tools/getTeamDigest.js';
+import { getTeamWeeklyReportTool } from './tools/getTeamWeeklyReport.js';
 import { checkForUpdate } from './update.js';
 
 // 업데이트 체크 — 백그라운드, 실패 무시
@@ -185,6 +187,32 @@ export function registerTools(server: McpServer): void {
     },
     async ({ date }) => {
       try { return ok(await getWeeklyReviewDraftTool.execute({ date })); }
+      catch (e) { return fail(e); }
+    },
+  );
+
+  server.tool(
+    getTeamDigestTool.name,
+    getTeamDigestTool.description,
+    {
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('조회할 날짜 (YYYY-MM-DD). 생략하면 오늘. 오늘 이후 날짜는 지원하지 않음'),
+      project_id: z.string().uuid().optional().describe('특정 프로젝트로 스코프를 좁힐 때 프로젝트 UUID (생략하면 조직 전체)'),
+    },
+    async ({ date, project_id }) => {
+      try { return ok(await getTeamDigestTool.execute({ date, project_id })); }
+      catch (e) { return fail(e); }
+    },
+  );
+
+  server.tool(
+    getTeamWeeklyReportTool.name,
+    getTeamWeeklyReportTool.description,
+    {
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('조회할 주에 속한 아무 날짜 (YYYY-MM-DD). 생략하면 이번 주. 오늘 이후 날짜는 지원하지 않음'),
+      project_id: z.string().uuid().optional().describe('특정 프로젝트로 스코프를 좁힐 때 프로젝트 UUID (생략하면 조직 전체)'),
+    },
+    async ({ date, project_id }) => {
+      try { return ok(await getTeamWeeklyReportTool.execute({ date, project_id })); }
       catch (e) { return fail(e); }
     },
   );
